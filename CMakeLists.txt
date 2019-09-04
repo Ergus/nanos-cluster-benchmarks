@@ -24,6 +24,10 @@ project (matvec)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_options(--ompss-2)
+add_definitions(-DNANOS6)
+set(CMAKE_EXE_LINKER_FLAGS --ompss-2)
+
 # add the subdirectories here
 file (GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*)
 foreach (child ${children})

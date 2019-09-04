@@ -13,9 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# This benchmark uses Liberep
 find_package (LIBEREP REQUIRED)
-
 include_directories (${LIBEREP_INCLUDE})
 
+# Add the executables and link
 add_executable (matvec_strong matvec_strong.cpp)
 target_link_libraries (matvec_strong ${LIBEREP_LIBRARY})
+
+# install (copy) scripts
+configure_file(submiter_mn.sh submiter_mn.sh COPYONLY)
+configure_file(submit_mn.sh submit_mn.sh COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/utils/argparse.sh argparse.sh COPYONLY)
