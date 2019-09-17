@@ -15,15 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "CommandLineParameter.hpp"
-#include "Report.hpp"
-#include "Reportable.hpp"
-#include "Timer.hpp"
-
 #include <iostream>
-
 #include <cstdlib>
+
+#include "argparser.h"
 
 #include "matvec.h"
 
@@ -40,18 +35,18 @@ void matvec_tasks(const double *A, const double *b, double *x,
 	#pragma oss taskwait
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+	init_args (argc, argv);
 
-	CommandLine::initialize(argc, argv, "matvec", "cluster");
-	CommandLineParameter<long> ROWS("ROWS", "Number of rows", "rows of matrix");
-	CommandLineParameter<long> COLS("COLS", "Number of columns", "columns of matrix");
-	CommandLineParameter<long> TS("TS", "Task size", "task size");
-	OptionalCommandLineParameter<long> its("its", 1, "iterations", "inner repetitions");
-	OptionalCommandLineParameter<bool> print("print", 0, "print matrices", "print matrices");
-	CommandLine::validate();
+	const int ROWS = create_cl_int ("Rows");
+	const int COLS = create_cl_int ("Columns");
+	const int TS = create_cl_int ("Task size");
+	const int its = create_optional_cl_int ("iterations", 1);
+	const int print = create_optional_cl_int ("print", 1);
 
 	std::cout << "Initializing data" << std::endl;
-	Timer ttime("ttime", "Total execution time");
+	timer *ttimer = create_timer("Total time");
 
 	double *A = alloc_init(ROWS, COLS, TS);   // This initialized by blocks TS x cols
 	double *b = alloc_init(ROWS, 1, TS);      // this splits the array in TS
@@ -59,12 +54,11 @@ int main(int argc, char* argv[]) {
 	#pragma oss taskwait
 
 	std::cout << "Starting algorithm" << std::endl;
-
-	Timer atimer("atime", "Algorithm execution time");
+	timer *atimer = create_timer("Algorithm time");
 
 	matvec_tasks(A, x, b, ROWS, COLS, TS);
 
-	ttime.stop();
+	free_timer(atimer);
 
 	std::cout << "Finished algorithm..." << std::endl;
 
@@ -78,17 +72,17 @@ int main(int argc, char* argv[]) {
 		std::cout << "Verification: " << (valid ? "Success" : "Failed") << std::endl;
 		std::cout << "Done printing results..." << std:: endl;
 	}
+	free_timer(ttimer);
 
 	free_matrix(A, ROWS * COLS);
 	free_matrix(x, COLS);
 	free_matrix(b, ROWS);
 
-	const double performance = its * ROWS * COLS * 2000.0 / (double) atimer;
+	const double performance = its * ROWS * COLS * 2000.0 ; // (double) atimer;
 
-	ReportEntry<double> passes("RESULT", "performance",
-	                           "Megaflops per second", performance, "MFlops/s");
-
-	Report::emit();
+	create_reportable_double ("performance", performance);
+	report_args ();
+	free_args ();
 
 	return 0;
 }

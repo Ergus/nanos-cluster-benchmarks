@@ -39,7 +39,7 @@ requirements](https://github.com/bsc-pm/nanos6/blob/master/docs/cluster/README-C
 To build the code you need first to install all the dependencies above. Then just:
 
 ```console
-git clone 'url_to_this_repo'
+git clone --recursive 'url_to_this_repo'
 cd nanos6-cluster-benchmarks
 mkdir build
 cd build

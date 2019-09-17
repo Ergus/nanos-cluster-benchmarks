@@ -30,11 +30,22 @@ set(CMAKE_EXE_LINKER_FLAGS --ompss-2)
 
 # add the subdirectories here
 file (GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*)
+message ("${children}")
+
+add_subdirectory(utils/ArgParserC)
+include_directories(utils/ArgParserC)
+
+
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "dir='${dir}'")
+endforeach()
+
 foreach (child ${children})
   if ((IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${child})
       AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/${child}/CMakeLists.txt))
     message ("-- Adding subdirectory: ${child}")
-    ADD_SUBDIRECTORY(${child})
+    add_subdirectory(${child})
   endif ()
 endforeach ()
 
