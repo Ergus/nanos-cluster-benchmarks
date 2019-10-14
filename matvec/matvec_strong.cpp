@@ -16,6 +16,7 @@
  */
 
 #include <iostream>
+#include <cstdio>
 #include <cstdlib>
 
 #include "argparser.h"
@@ -23,14 +24,16 @@
 #include "matvec.h"
 
 void matvec_tasks(const double *A, const double *b, double *x,
-            size_t rows, size_t cols, size_t TS)
+                  int rows, int cols, int ts)
 {
-	assert(TS <= rows);
-	myassert (rows % TS == 0);
+	printf ("%d %d %d\n", rows, cols, ts);
 
-	for (size_t i = 0; i < rows; i += TS) {
-		#pragma oss task in(A[i * cols; cols * TS]) in(b[0; cols]) out(x[i; TS])
-		matvec_base(&A[i * cols], b, &x[i], TS, cols);
+	assert(ts <= rows);
+	myassert (rows % ts == 0);
+
+	for (size_t i = 0; i < rows; i += ts) {
+		#pragma oss task in(A[i * cols; cols * ts]) in(b[0; cols]) out(x[i; ts])
+		matvec_base(&A[i * cols], b, &x[i], ts, cols);
 	}
 	#pragma oss taskwait
 }
@@ -41,22 +44,22 @@ int main(int argc, char* argv[])
 
 	const int ROWS = create_cl_int ("Rows");
 	const int COLS = create_cl_int ("Columns");
-	const int TS = create_cl_int ("Task size");
+	const int ts = create_cl_int ("Task size");
 	const int its = create_optional_cl_int ("iterations", 1);
 	const int print = create_optional_cl_int ("print", 1);
 
 	std::cout << "Initializing data" << std::endl;
 	timer *ttimer = create_timer("Total time");
 
-	double *A = alloc_init(ROWS, COLS, TS);   // This initialized by blocks TS x cols
-	double *b = alloc_init(ROWS, 1, TS);      // this splits the array in TS
+	double *A = alloc_init(ROWS, COLS, ts);   // this initialized by blocks ts x cols
+	double *b = alloc_init(ROWS, 1, ts);      // this splits the array in ts
 	double *x = alloc_init(COLS, 1, COLS);    // This one initializes all the arrays
 	#pragma oss taskwait
 
 	std::cout << "Starting algorithm" << std::endl;
 	timer *atimer = create_timer("Algorithm time");
 
-	matvec_tasks(A, x, b, ROWS, COLS, TS);
+	matvec_tasks(A, x, b, ROWS, COLS, ts);
 
 	free_timer(atimer);
 
@@ -78,7 +81,8 @@ int main(int argc, char* argv[])
 	free_matrix(x, COLS);
 	free_matrix(b, ROWS);
 
-	const double performance = its * ROWS * COLS * 2000.0 ; // (double) atimer;
+	const double performance =
+		its * ROWS * COLS * 2000.0 / getNS_timer(atimer);
 
 	create_reportable_double ("performance", performance);
 	report_args ();

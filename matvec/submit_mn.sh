@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 #SBATCH --qos=debug
 #SBATCH --workdir=.
 
@@ -51,8 +50,8 @@ ulimit -c unlimited
 # Environment variables
 export NANOS6_CPU_SCHEDULER=fifo
 export NANOS6_COMMUNICATION=mpi-2sided
-export NANOS6_DISTRIBUTED_MEMORY=4G
-export NANOS6_LOCAL_MEMORY=1G
+export NANOS6_DISTRIBUTED_MEMORY=16G
+export NANOS6_LOCAL_MEMORY=8G
 
 export NANOS6_SCHEDULER=${ARGS[s]}
 export NANOS6=${ARGS[n]}
@@ -83,10 +82,6 @@ if [[ ${NANOS6} = extrae ]]; then
 	echo -e "# LD_PRELOAD=${LD_PRELOAD}"
 fi
 
-export NANOS6_COMMUNICATION=mpi-2sided
-export NANOS6_DISTRIBUTED_MEMORY=4G
-export NANOS6_LOCAL_MEMORY=1G
-
 # Start run here
 echo -e "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
 echo -e "# Nodes: ${SLURM_JOB_NUM_NODES} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
@@ -99,11 +94,11 @@ env | grep NANOS6 | sed -e 's/^#*/# /'
 echo -e "# --------------------------------------\n"
 
 for ((it=0; it<iterations; ++it)) {
-		echo "# Starting it: ${it} at: " $(date)
-		start=$SECONDS
-		srun taskset -c 0-3 ${ARGS[x]} ${ARGS[d]} ${ARGS[b]} 0
-		end=$SECONDS
-		echo "# Ending: " $(date)
-		echo "# Elapsed: "$((end-start))
-		echo -e "\n# --------------------------------------\n"
-	}
+	echo "# Starting it: ${it} at: " $(date)
+	start=$SECONDS
+	srun taskset -c 0-3 ${ARGS[x]} ${ARGS[d]} ${ARGS[b]} 0
+	end=$SECONDS
+	echo "# Ending: " $(date)
+	echo "# Elapsed: "$((end-start))
+	echo -e "\n# --------------------------------------\n"
+    }

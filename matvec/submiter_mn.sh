@@ -28,14 +28,14 @@ add_argument -a d -l dimensions -h "List of dimensions" -t string -d 128
 add_argument -a b -l bsizes -h "List block sizes" -t string -d 8
 
 add_argument -a t -l type -h "Type of scalability experiment to test" -t enum\
-			 -d "strong" -e "weak strong"
-
+	     -d "strong" -e "weak strong"
 add_argument -a n -l nanos -h "Nanos version to use" -t enum\
-			 -e "Debug optimized extrae verbose-debug" -d "debug"
+	     -e "Debug optimized extrae verbose-debug" -d "debug"
 add_argument -a s -l scheduler -h "Nanos scheduler" -t enum\
-			 -e "cluster-random cluster-locality" -d "cluster-random"
+	     -e "cluster-random cluster-locality" -d "cluster-random"
 add_argument -a m -l mpi -h "MPI version to use" -t enum\
-			 -e "impi ompi" -d "impi"
+	     -e "impi ompi" -d "impi"
+
 #-e "distributed distributedLocation distributedLocationBalanced"\
 parse_args "$@"
 printargs
