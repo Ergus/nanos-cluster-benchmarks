@@ -34,7 +34,7 @@ extern "C" {
 #define max(x,y) ((x) > (y)) ? (x) : (y)
 
 #define myassert(cond) {						\
-		if (!cond) {						\
+		if (!(cond)) {						\
 			fprintf(stderr, "%s%s:%u Assertion `%s' failed.\n", \
 			        __func__, __FILE__, __LINE__, #cond);	\
 			abort();					\
@@ -43,7 +43,7 @@ extern "C" {
 
 double *alloc_init(const size_t rows, size_t cols, size_t TS)
 {
-	myassert(rows > TS == 0);
+	myassert(rows >= TS);
 	myassert(rows % TS == 0);
 
 	const size_t size = cols * TS;
