@@ -46,22 +46,24 @@ double *alloc_init(const size_t rows, size_t cols, size_t TS)
 	myassert(rows >= TS);
 	myassert(rows % TS == 0);
 
-	const size_t size = cols * TS;
+	const size_t size = cols * rows;
 
 	double *ret = (double *) nanos6_dmalloc(size * sizeof(double),
 	                                        nanos6_equpart_distribution, 0, nullptr);
 	myassert (ret);
 
+	const size_t piece = cols * TS;
+
 	for (size_t i = 0; i < rows; i += TS) {
 		double *first = &ret[i * cols];
 
-		#pragma oss task out(first[0; size]) label(initalize_vector)
+		#pragma oss task out(first[0; piece]) label(initalize_vector)
 		{
 			struct drand48_data drand_buf;
 			srand48_r(i, &drand_buf);
 			double x;
 
-			for (size_t j = 0; j < size; ++j) {
+			for (size_t j = 0; j < piece; ++j) {
 				drand48_r(&drand_buf, &x);
 				first[j] = x;
 			}
