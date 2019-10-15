@@ -18,8 +18,7 @@ add_executable (matvec_strong matvec_strong.cpp)
 target_link_libraries (matvec_strong argparser)
 
 # install (copy) scripts
-configure_file(submiter_mn.sh submiter_mn.sh COPYONLY)
-configure_file(submit_mn.sh submit_mn.sh COPYONLY)
-
-configure_file(${PROJECT_SOURCE_DIR}/utils/ArgParserBash/argparse.sh
-  ${CMAKE_BINARY_DIR}/argparse.sh COPYONLY)
+configure_file(submiter_mn.sh submiter_mn.sh @ONLY)
+configure_file(submit_mn.sh submit_mn.sh @ONLY)
+configure_file(extrae_template.xml extrae_template.xml COPYONLY)
+configure_file(trace.sh trace.sh COPYONLY)

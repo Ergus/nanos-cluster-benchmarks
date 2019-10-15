@@ -32,6 +32,9 @@ set(CMAKE_EXE_LINKER_FLAGS --ompss-2)
 add_subdirectory(utils/ArgParserC)
 include_directories(utils/ArgParserC)
 
+configure_file(${PROJECT_SOURCE_DIR}/utils/ArgParserBash/argparse.sh
+  ${PROJECT_BINARY_DIR}/argparse.sh COPYONLY)
+
 file (GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*)
 
 foreach (child ${children})

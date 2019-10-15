@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-source argparse.sh
+source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a i -l iter -h "Inner Repetitions default[1]" -t int -d 1
 add_argument -a r -l reps -h "Outer Repetitions default[1]" -t int -d 1
@@ -79,7 +79,7 @@ for dim in ${dims[@]}; do
  					   --job-name=${jobname} \
  					   --output="${resdir}/%x_%2a_%j.out" \
  					   --error="${resdir}/%x_%2a_%j.err" \
- 					   ./submit_matvec3.sh -x ${ARGS[x]} \
+ 					   ./submit_mn.sh -x ${ARGS[x]} \
 					   -R ${rows} -C ${dim} \
 					   -b ${bs} \
 					   -i ${ARGS[i]} -I ${ARGS[I]} -r ${ARGS[r]} -o ${resdir} \
