@@ -11,7 +11,7 @@ add_argument -a R -l rows -h "Rows" -t int
 add_argument -a C -l cols -h "Columns" -t int
 add_argument -a b -l bsize -h "Block size" -t int
 add_argument -a i -l iter -h "Inner Repetitions in task default[1]" -t int
-add_argument -a r -l reps -h "Outer Repetitions out task default[1]" -t int
+add_argument -a p -l print -h "Print matrix default" -t int
 add_argument -a I -l Iter -h "Repetitions per program default[1]" -t int
 add_argument -a o -l output -h "Output directory (used only for extrae)" -d ""
 add_argument -a n -l nanos -h "Nanos version to use"
@@ -54,7 +54,7 @@ export NANOS6=${ARGS[n]}
 
 iterations=${ARGS[I]}
 
-COMMAND="${ARGS[x]} ${ARGS[R]} ${ARGS[C]} ${ARGS[b]} ${ARGS[i]} ${ARGS[r]}"
+COMMAND="${ARGS[x]} ${ARGS[R]} ${ARGS[C]} ${ARGS[b]} ${ARGS[i]} ${ARGS[p]}"
 
 # If EXTRAE
 if [[ ${NANOS6} = extrae ]]; then
@@ -64,16 +64,16 @@ if [[ ${NANOS6} = extrae ]]; then
 	iterations=1  # with extrae enabled only 1 iteration is allowed
 
 	# Create xml for this for this benchmark if extrae is set
-	sed -e "s|PREFIX|${SLURM_JOB_NAME}|"               \
-		-e "s|EXTRAEHOME|${EXTRAE_HOME}|"              \
-		-e "s|TMPDIR|${dest}_tmp|"\
-		-e "s|FINALDIR|${ARGS[o]}|"  \
-		-e "s|BINARY|${ARGS[x]}|"                      \
-		-e "s|NPR|${SLURM_JOB_NUM_NODES}|"             \
-		extrae_template.xml > ${EXTRAE_CONFIG_FILE}
+	sed -e "s|PREFIX|${SLURM_JOB_NAME}|"    \
+	    -e "s|EXTRAEHOME|${EXTRAE_HOME}|"   \
+	    -e "s|TMPDIR|${dest}_tmp|"          \
+	    -e "s|FINALDIR|${ARGS[o]}|"         \
+	    -e "s|BINARY|${ARGS[x]}|"           \
+	    -e "s|NPR|${SLURM_JOB_NUM_NODES}|"  \
+	    extrae_template.xml > ${EXTRAE_CONFIG_FILE}
 
 	export NANOS6_EXTRAE_AS_THREADS=1
-    #export LD_PRELOAD="${EXTRAE_HOME}/lib/libnanosmpitrace.so"
+	#export LD_PRELOAD="${EXTRAE_HOME}/lib/libnanosmpitrace.so"
 
 	#echo -e "# Enabled EXTRAE with EXTRAE_CONFIG_FILE=${EXTRAE_CONFIG_FILE}"
 	#echo -e "# LD_PRELOAD=${LD_PRELOAD}"
@@ -92,12 +92,13 @@ echo -e "# Command: " ${COMMAND}
 env | grep NANOS6 | sed -e 's/^#*/# /'
 echo -e "# ======================================\n"
 
-for ((it=0; it<iterations; ++it)) {
-		echo "# Starting it: ${it} at: " $(date)
-		start=$SECONDS
-		srun ${COMMAND}
-		end=$SECONDS
-		echo "# Ending: " $(date)
-		echo "# Elapsed: "$((end-start))
-		echo -e "\n# --------------------------------------\n"
-	}
+for ((it=0; it<iterations; ++it))
+    {
+	    echo "# Starting it: ${it} at: " $(date)
+	    start=$SECONDS
+	    srun ${COMMAND}
+	    end=$SECONDS
+	    echo "# Ending: " $(date)
+	    echo "# Elapsed: "$((end-start))
+	    echo -e "\n# --------------------------------------\n"
+    }

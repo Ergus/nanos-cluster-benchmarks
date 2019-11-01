@@ -101,7 +101,7 @@
 	 sort-addresses="yes"
 	 overwrite="yes"
 	 >
-	EXTRAE.prv
+	FINALDIR/EXTRAE.prv
   </merge>
 
 </trace>

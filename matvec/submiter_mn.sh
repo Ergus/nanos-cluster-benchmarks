@@ -18,7 +18,7 @@
 source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a i -l iter -h "Inner Repetitions default[1]" -t int -d 1
-add_argument -a r -l reps -h "Outer Repetitions default[1]" -t int -d 1
+add_argument -a p -l print -h "Print matrices default[true]" -t bool -d 1
 add_argument -a I -l Iter -h "Repetitions per program default[1]" -t int -d 1
 add_argument -a w -l wtime -h "Wall time limit for jobs" -t timer -d 00:10:00
 add_argument -a q -l queue -h "queue" -t enum -e "debug bsc_cs xlarge" -d "debug"
@@ -29,6 +29,7 @@ add_argument -a b -l bsizes -h "List block sizes" -t string -d 8
 
 add_argument -a t -l type -h "Type of scalability experiment to test" -t enum\
 	     -d "strong" -e "weak strong"
+
 add_argument -a n -l nanos -h "Nanos version to use" -t enum\
 	     -e "Debug optimized extrae verbose-debug" -d "debug"
 add_argument -a s -l scheduler -h "Nanos scheduler" -t enum\
@@ -46,7 +47,7 @@ IFS=', ' read -r -a dims <<< "${ARGS[d]}"
 
 now=$(date +%F_%H-%M-%S)
 name=${ARGS[x]/%.nanos6}
-resdir="results/${name}_${ARGS[n]}_${ARGS[s]}_${ARGS[t]}_${ARGS[r]}_${ARGS[i]}_${now}"
+resdir="results/${name}_${ARGS[n]}_${ARGS[s]}_${ARGS[t]}_${ARGS[p]}_${ARGS[i]}_${now}"
 
 mkdir -p ${resdir}
 
@@ -74,19 +75,20 @@ for dim in ${dims[@]}; do
 				filename="${resdir}/${jobname}"
 
  				sbatch --ntasks=${node} \
-					   --time=${ARGS[w]} \
-					   --qos=${ARGS[q]} \
- 					   --job-name=${jobname} \
- 					   --output="${resdir}/%x_%2a_%j.out" \
- 					   --error="${resdir}/%x_%2a_%j.err" \
- 					   ./submit_mn.sh -x ${ARGS[x]} \
-					   -R ${rows} -C ${dim} \
-					   -b ${bs} \
-					   -i ${ARGS[i]} -I ${ARGS[I]} -r ${ARGS[r]} -o ${resdir} \
-					   -n ${ARGS[n]} -s ${ARGS[s]} -m ${ARGS[m]}
+				       --time=${ARGS[w]} \
+				       --qos=${ARGS[q]} \
+ 				       --job-name=${jobname} \
+ 				       --output="${resdir}/%x_%2a_%j.out" \
+ 				       --error="${resdir}/%x_%2a_%j.err" \
+ 				       ./submit_mn.sh -x ${ARGS[x]} \
+				       -R ${rows} -C ${dim} -b ${bs} \
+				       -i ${ARGS[i]} \
+				       -p $([[ ${ARGS[p]} = true ]] && echo 1 || echo 0) \
+				       -I ${ARGS[I]} -o ${resdir} \
+				       -n ${ARGS[n]} -s ${ARGS[s]} -m ${ARGS[m]}
 			else
 				printf "Jump combination dim: %s bs: %s nodes: %s\n" \
-					   $dim $bs $node
+				       $dim $bs $node
 			fi
 		done
 	done
