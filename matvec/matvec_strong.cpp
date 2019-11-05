@@ -51,9 +51,9 @@ int main(int argc, char* argv[])
 	std::cout << "Initializing data" << std::endl;
 	timer *ttimer = create_timer("Total time");
 
-	double *A = alloc_init(ROWS, COLS, ts);   // this initialized by blocks ts x cols
-	double *b = alloc_init(ROWS, 1, ts);      // this splits the array in ts
-	double *x = alloc_init(COLS, 1, COLS);    // This one initializes all the arrays
+	double *A = alloc_init(ROWS, COLS, ts); // this initialized by blocks ts x cols
+	double *b = alloc_init(ROWS, 1, ts);    // this splits the array in ts
+	double *x = alloc_init(COLS, 1, COLS);  // This one initializes all the arrays
 	#pragma oss taskwait
 
 	std::cout << "Starting algorithm" << std::endl;
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
 	matvec_tasks(A, x, b, ROWS, COLS, ts);
 
-	free_timer(atimer);
+	stop_timer(atimer);
 
 	std::cout << "Finished algorithm..." << std::endl;
 
@@ -72,10 +72,12 @@ int main(int argc, char* argv[])
 
 		const bool valid = validate (A, b, x, ROWS, COLS);
 
-		std::cout << "Verification: " << (valid ? "Success" : "Failed") << std::endl;
+		std::cout << "Verification: "
+		          << (valid ? "Success" : "Failed")
+		          << std::endl;
 		std::cout << "Done printing results..." << std:: endl;
 	}
-	free_timer(ttimer);
+	stop_timer(ttimer);
 
 	free_matrix(A, ROWS * COLS);
 	free_matrix(x, COLS);
@@ -86,6 +88,8 @@ int main(int argc, char* argv[])
 
 	create_reportable_double ("performance", performance);
 	report_args ();
+	free_timer(atimer);
+	free_timer(ttimer);
 	free_args ();
 
 	return 0;
