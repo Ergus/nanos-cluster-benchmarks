@@ -58,7 +58,7 @@ double *alloc_init(const size_t rows, size_t cols, size_t TS)
 	for (size_t i = 0; i < rows; i += TS) {
 		double *first = &ret[i * cols];
 
-		#pragma oss task out(first[0; piece]) label(initalize_vector)
+		#pragma oss task out(first[0; piece]) label("initalize_vector")
 		{
 			struct drand48_data drand_buf;
 			srand48_r(i, &drand_buf);
@@ -93,7 +93,7 @@ void matvec_base(const double *A, const double *x, double *b,
 void matvec_print2d(const double *A, size_t rows, size_t cols,
                     const char filename[128])
 {
-	#pragma oss task in(A[0; rows * cols]) label(matrix_print)
+	#pragma oss task in(A[0; rows * cols]) label("matrix_print")
 	{
 		FILE *fp = fopen(filename, "w+");
 		myassert(fp);
@@ -110,7 +110,7 @@ void matvec_print2d(const double *A, size_t rows, size_t cols,
 
 void matvec_print1d(const double *vec, size_t size, const char filename[128])
 {
-	#pragma oss task in(vec[0; size]) label(print_vector)
+	#pragma oss task in(vec[0; size]) label("print_vector")
 	{
 		FILE *fp = fopen(filename, "w+");
 		myassert(fp);
@@ -127,7 +127,7 @@ bool validate(const double *A, const double *b, double *x, size_t rows, size_t c
 	bool success = true;
 
 	#pragma oss task in(A[0; rows * cols]) in(b[0; cols]) in(x[0; rows])\
-		inout(success) label(validate)
+		inout(success) label("validate")
 	{
 		success = true;
 

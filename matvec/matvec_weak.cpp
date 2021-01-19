@@ -23,7 +23,7 @@
 
 #if FETCHTASK == 0
 #define THECOND 0
-#if FETCHTASK == 1
+#elif FETCHTASK == 1
 #define THECOND 1
 #elif FETCHTASK == 2
 #define THECOND it < 1
@@ -36,7 +36,7 @@ void matvec_tasks_weak(const double *A, const double *b, double *x,
 {
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 
-	myassert(rows => numNodes);
+	myassert(rows >= numNodes);
 	myassert(rows % numNodes == 0);
 
 	const size_t rowsPerNode = rows / numNodes;
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
 	timer *atimer = create_timer("Algorithm time");
 
 	for (int i = 0; i < its; ++i)
-		matvec_tasks_weak(A, x, b, ROWS, ts);
+		matvec_tasks_weak(A, x, b, ROWS, ts, i);
 	#pragma oss taskwait
 
 	stop_timer(atimer);

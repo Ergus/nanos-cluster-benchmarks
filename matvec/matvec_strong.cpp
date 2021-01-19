@@ -53,7 +53,8 @@ int main(int argc, char* argv[])
 	std::cout << "Starting algorithm" << std::endl;
 	timer *atimer = create_timer("Algorithm time");
 
-	matvec_tasks_strong(A, x, b, ROWS, ts);
+	for (int i = 0; i < its; ++i)
+		matvec_tasks_strong(A, x, b, ROWS, ts, i);
 	#pragma oss taskwait
 
 	stop_timer(atimer);
