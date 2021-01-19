@@ -21,15 +21,43 @@
 
 #include "matvec.h"
 
-void matvec_tasks_strong(const double *A, const double *b, double *x,
-                         int rows, int ts, size_t it)
-{
-	assert(ts <= rows);
-	myassert (rows % ts == 0);
+#if FETCHTASK == 0
+#define THECOND 0
+#if FETCHTASK == 1
+#define THECOND 1
+#elif FETCHTASK == 2
+#define THECOND it < 1
+#else
+#error FETCHTASK value not valid.
+#endif
 
-	for (size_t i = 0; i < rows; i += ts) {
-		#pragma oss task in(A[i * rows; rows * ts]) in(b[0; rows]) out(x[i; ts])
-		matvec_base(&A[i * rows], b, &x[i], ts, rows);
+void matvec_tasks_weak(const double *A, const double *b, double *x,
+                       int rows, int ts, size_t it)
+{
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+
+	myassert(rows => numNodes);
+	myassert(rows % numNodes == 0);
+
+	const size_t rowsPerNode = rows / numNodes;
+	myassert(ts <= rowsPerNode);
+	myassert(rowsPerNode % ts == 0);
+
+	for (size_t i = 0; i < rows; i += rowsPerNode) {
+
+		#pragma oss task weakin(A[i * rows; rows * rowsPerNode]) weakin(b[0; rows]) weakout(x[i; rowsPerNode])
+		{
+			if (THECOND) {
+				#pragma oss task in(A[i * rows; rows * rowsPerNode]) in(b[0; rows]) out(x[i; rowsPerNode])
+				{
+				}
+			}
+
+			for (size_t j = i; j < i + rowsPerNode; j += ts) {
+				#pragma oss task in(A[j * rows; rows * ts]) in(b[0; rows]) out(x[j; ts])
+				matvec_base(&A[j * rows], b, &x[j], ts, rows);
+			}
+		}
 	}
 }
 
@@ -53,12 +81,14 @@ int main(int argc, char* argv[])
 	std::cout << "Starting algorithm" << std::endl;
 	timer *atimer = create_timer("Algorithm time");
 
-	matvec_tasks_strong(A, x, b, ROWS, ts);
+	for (int i = 0; i < its; ++i)
+		matvec_tasks_weak(A, x, b, ROWS, ts);
 	#pragma oss taskwait
 
 	stop_timer(atimer);
 
 	std::cout << "Finished algorithm..." << std::endl;
+	stop_timer(ttimer);
 
 	if (print) {
 		matvec_print2d(A, ROWS, ROWS, "matrix_A.mat");
@@ -71,7 +101,6 @@ int main(int argc, char* argv[])
 		          << (valid ? "Success" : "Failed")
 		          << std::endl;
 	}
-	stop_timer(ttimer);
 
 	free_matrix(A, ROWS * ROWS);
 	free_matrix(x, ROWS);

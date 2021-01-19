@@ -16,17 +16,15 @@
 cmake_minimum_required (VERSION 3.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+find_package(MERCURIUM REQUIRED)
 
-find_package (MCC REQUIRED)
-
-project (matvec)
+project(matvec)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(--ompss-2)
-add_definitions(-DNANOS6)
-set(CMAKE_EXE_LINKER_FLAGS --ompss-2)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)

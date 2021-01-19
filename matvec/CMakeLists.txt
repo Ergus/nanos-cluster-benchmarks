@@ -17,7 +17,20 @@
 add_executable (matvec_strong matvec_strong.cpp)
 target_link_libraries (matvec_strong argparser)
 
+add_executable (matvec_weak_nofetch matvec_weak.cpp)
+target_link_libraries (matvec_weak_nofetch argparser)
+target_compile_definitions(matvec_weak_nofetch PUBLIC -DFETCHTASK=0)
+
+add_executable (matvec_weak_fetchall matvec_weak.cpp)
+target_link_libraries (matvec_weak_fetchall argparser)
+target_compile_definitions(matvec_weak_fetchall PUBLIC -DFETCHTASK=1)
+
+add_executable (matvec_weak_fetchfirst matvec_weak.cpp)
+target_link_libraries (matvec_weak_fetchfirst argparser)
+target_compile_definitions(matvec_weak_fetchfirst PUBLIC -DFETCHTASK=2)
+
 # install (copy) scripts
+configure_file(validate.py validate.py @ONLY)
 configure_file(submiter_mn.sh submiter_mn.sh @ONLY)
 configure_file(submit_mn.sh submit_mn.sh @ONLY)
 configure_file(extrae_template.xml extrae_template.xml COPYONLY)

@@ -26,19 +26,20 @@ extern "C" {
 #include <nanos6/debug.h>
 #endif
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #define min(x,y) ((x) < (y)) ? (x) : (y)
 #define max(x,y) ((x) > (y)) ? (x) : (y)
 
-#define myassert(cond) {						\
-		if (!(cond)) {						\
+#define myassert(cond) {										\
+		if (!(cond)) {											\
 			fprintf(stderr, "%s%s:%u Assertion `%s' failed.\n", \
-			        __func__, __FILE__, __LINE__, #cond);	\
-			abort();					\
-		}							\
+			        __func__, __FILE__, __LINE__, #cond);		\
+			abort();											\
+		}														\
 	}
 
 double *alloc_init(const size_t rows, size_t cols, size_t TS)
@@ -78,6 +79,7 @@ void free_matrix(double *mat, size_t size)
 	nanos6_dfree(mat, size * sizeof(double));
 }
 
+// Multiply 
 void matvec_base(const double *A, const double *x, double *b,
                  size_t rows, size_t cols)
 {
@@ -120,8 +122,7 @@ void matvec_print1d(const double *vec, size_t size, const char filename[128])
 	}
 }
 
-bool validate(const double *A, const double *b, double *x,
-               size_t rows, size_t cols)
+bool validate(const double *A, const double *b, double *x, size_t rows, size_t cols)
 {
 	bool success = true;
 
