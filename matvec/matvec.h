@@ -31,16 +31,7 @@ extern "C" {
 #include <assert.h>
 #include <stdbool.h>
 
-#define min(x,y) ((x) < (y)) ? (x) : (y)
-#define max(x,y) ((x) > (y)) ? (x) : (y)
-
-#define myassert(cond) {										\
-		if (!(cond)) {											\
-			fprintf(stderr, "%s%s:%u Assertion `%s' failed.\n", \
-			        __func__, __FILE__, __LINE__, #cond);		\
-			abort();											\
-		}														\
-	}
+#include "utils/macros.h"
 
 double *alloc_init(const size_t rows, size_t cols, size_t TS)
 {
@@ -79,7 +70,7 @@ void free_matrix(double *mat, size_t size)
 	nanos6_dfree(mat, size * sizeof(double));
 }
 
-// Multiply 
+// Multiply
 void matvec_base(const double *A, const double *x, double *b,
                  size_t rows, size_t cols)
 {

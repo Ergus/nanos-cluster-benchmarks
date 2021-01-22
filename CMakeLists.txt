@@ -28,8 +28,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)
-include_directories(utils/ArgParserC)
-include_directories(utils/cmacros)
+
+include_directories(utils)
 
 configure_file(${PROJECT_SOURCE_DIR}/utils/ArgParserBash/argparse.sh
   ${PROJECT_BINARY_DIR}/argparse.sh COPYONLY)
