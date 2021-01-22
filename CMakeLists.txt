@@ -18,10 +18,11 @@ cmake_minimum_required (VERSION 3.0)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(MERCURIUM REQUIRED)
 
-project(matvec)
+project(nanos6_benchmarks)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_compile_options(--ompss-2)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
@@ -30,11 +31,17 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 add_subdirectory(utils/ArgParserC)
 
 include_directories(utils)
+enable_testing()
 
 configure_file(${PROJECT_SOURCE_DIR}/utils/ArgParserBash/argparse.sh
   ${PROJECT_BINARY_DIR}/argparse.sh COPYONLY)
 
-file (GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*)
+# Python interpreter for test
+set(Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4 3.3 3.2 3.1)
+find_package(PythonInterp MODULE)
+
+# Lists of include files
+file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR}/*_ompss2 ${CMAKE_CURRENT_LIST_DIR}/utils)
 
 foreach (child ${children})
   if ((IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${child})

@@ -15,11 +15,11 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
+#include "matvec.h"
 
 #include "ArgParserC/argparser.h"
 
-#include "matvec.h"
+#include <iostream>
 
 void matvec_tasks_strong(const double *A, const double *b, double *x,
                          int rows, int ts, size_t it)
@@ -62,9 +62,9 @@ int main(int argc, char* argv[])
 	std::cout << "Finished algorithm..." << std::endl;
 
 	if (print) {
-		matvec_print2d(A, ROWS, ROWS, "matrix_A.mat");
-		matvec_print1d(b, ROWS, "vector_b.mat");
-		matvec_print1d(x, ROWS, "vector_x.mat");
+		printmatrix(A, ROWS, ROWS, "matrix_A.mat");
+		printmatrix(b, ROWS, 1, "vector_b.mat");
+		printmatrix(x, ROWS, 1, "vector_x.mat");
 
 		const bool valid = validate(A, x, b, ROWS, ROWS);
 
