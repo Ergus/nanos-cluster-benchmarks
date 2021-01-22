@@ -4,3 +4,6 @@
 [submodule "utils/ArgParserBash"]
 	path = utils/ArgParserBash
 	url = https://github.com/Ergus/ArgParseBash.git
+[submodule "utils/cmacros"]
+	path = utils/cmacros
+	url = https://github.com/Ergus/cmacros.git
