@@ -14,20 +14,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Add the executables and link
-add_executable(matvec_strong matvec_strong.cpp)
+add_executable(matvec_strong matvec.c)
+target_compile_definitions(matvec_strong PUBLIC -DISSTRONG)
 target_link_libraries (matvec_strong argparser)
 
-add_executable(matvec_weak_nofetch matvec_weak.cpp)
-target_link_libraries(matvec_weak_nofetch argparser)
+add_executable(matvec_weak_nofetch matvec.c)
 target_compile_definitions(matvec_weak_nofetch PUBLIC -DFETCHTASK=0)
+target_link_libraries(matvec_weak_nofetch argparser)
 
-add_executable(matvec_weak_fetchall matvec_weak.cpp)
-target_link_libraries(matvec_weak_fetchall argparser)
+add_executable(matvec_weak_fetchall matvec.c)
 target_compile_definitions(matvec_weak_fetchall PUBLIC -DFETCHTASK=1)
+target_link_libraries(matvec_weak_fetchall argparser)
 
-add_executable(matvec_weak_fetchfirst matvec_weak.cpp)
-target_link_libraries(matvec_weak_fetchfirst argparser)
+add_executable(matvec_weak_fetchfirst matvec.c)
 target_compile_definitions(matvec_weak_fetchfirst PUBLIC -DFETCHTASK=2)
+target_link_libraries(matvec_weak_fetchfirst argparser)
 
 # install (copy) scripts
 configure_file(validate.py validate.py @ONLY)

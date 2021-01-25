@@ -26,22 +26,18 @@ extern "C" {
 #include <nanos6/debug.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdbool.h>
-
-#include "utils/macros.h"
+#include "cmacros/macros.h"
 
 	double *alloc_init(const size_t rows, size_t cols, size_t TS)
 	{
 		myassert(rows >= TS);
-		myassert(rows % TS == 0);
+		modcheck(rows, TS);
 
 		const size_t size = cols * rows;
 
-		double *ret = (double *) nanos6_dmalloc(size * sizeof(double),
-		                                        nanos6_equpart_distribution, 0, nullptr);
+		double *ret =
+			(double *) nanos6_dmalloc(size * sizeof(double),
+			                          nanos6_equpart_distribution, 0, NULL);
 		myassert (ret);
 
 		const size_t piece = cols * TS;
@@ -70,60 +66,60 @@ extern "C" {
 		nanos6_dfree(mat, size * sizeof(double));
 	}
 
-	// Multiply
-	void matvec_base(const double *A, const double *b, double *x,
-	                 size_t rows, size_t cols)
+
+	void matmul_base(const double *A, const double *B, double * const C,
+	                 size_t lrowsA, size_t dim, size_t colsBC)
 	{
-		for (size_t i = 0; i < rows; ++i) {
-			x[i] = 0.0;
-			for (size_t j = 0; j < cols; ++j)
-				x[i] += A[i * cols + j] * b[j];
-		}
-	}
+		for (size_t i = 0; i < lrowsA; ++i) {
+			for (size_t k = 0; k < colsBC; ++k)
+				C[i * colsBC + k] = 0.0;
 
-	void __print(const double *A, size_t rows, size_t cols, const char name[64])
-	{
-		#pragma oss task in(A[0; rows * cols]) label("matrix_print")
-		{
-			char filename[256];
-			sprintf(filename, "%s.mat", prefix, name);
-			FILE *fp = fopen(filename, "w+");
-			myassert(fp);
+			for (size_t j = 0; j < dim; ++j) {
+				const double temp = A[i * dim + j];
 
-			fprintf(fp, "# name: %s\n", name);
-			fprintf(fp, "# type: matrix\n");
-			fprintf(fp, "# rows: %lu\n", rows);
-			fprintf(fp, "# columns: %lu\n", cols);
-
-			for (size_t i = 0; i < rows; ++i) {
-				for (size_t j = 0; j < cols; ++j) {
-					fprintf(fp, "%3.8lf ", mat[i * cols + j]);
+				for (size_t k = 0; k < colsBC; ++k) {
+					C[i * colsBC + k] += (temp * B[j * colsBC + k]);
 				}
-				fprintf(fp, "\n");
 			}
-
-			fclose(fp);
 		}
 	}
 
-#define printmatrix(mat, rows, cols) __print(mat, rows, cols, #mat)
+	void __print_task(const double * const mat,
+	                  const size_t rows, const size_t cols,
+	                  const char prefix[64], const char name[64])
+	{
+		#pragma oss task in(mat[0; rows * cols]) label("matrix_print")
+		{
+			__print(mat, rows, cols, prefix, name);
+		}
+	}
 
-	bool validate(const double *A, const double *b, double *x, size_t rows, size_t cols)
+#define printmatrix_task(mat, rows, cols, prefix) \
+	__print_task(mat, rows, cols, prefix, #mat)
+
+
+	bool validate(const double *A, const double *B, double *C,
+	              size_t dim, size_t colsBC)
 	{
 		bool success = true;
 
-		#pragma oss task in(A[0; rows * cols]) in(b[0; cols]) in(x[0; rows])\
+		#pragma oss task in(A[0; dim * dim])			\
+			in(B[0; dim * colsBC])						\
+			in(C[0; dim * colsBC])						\
 			inout(success) label("validate")
 		{
 			success = true;
 
-			double *expected = (double *) malloc(rows * sizeof(double));
-			matvec_base(A, b, expected, rows, cols);
+			double *expected = (double *) malloc(dim * colsBC * sizeof(double));
+			matmul_base(A, B, expected, dim, dim, colsBC);
 
-			for (size_t i = 0; i < rows; ++i) {
-				if (abs(x[i] - expected[i]) > 1e-12) {
-					success = false;
-					break;
+			for (size_t i = 0; i < dim; ++i) {
+				for (size_t j = 0; j < colsBC; ++j) {
+
+					if (abs(C[i * colsBC + j] - expected[i * colsBC + j]) > 1e-12) {
+						success = false;
+						break;
+					}
 				}
 			}
 

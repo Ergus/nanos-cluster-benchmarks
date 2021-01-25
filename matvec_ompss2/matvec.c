@@ -15,11 +15,29 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
+#include <stdio.h>
 
 #include "ArgParserC/argparser.h"
 
 #include "matvec.h"
+
+#ifdef ISSTRONG
+
+void matvec_tasks(const double *A, const double *B, double *C,
+                  size_t ts, size_t dim, size_t colsBC, size_t it)
+{
+	myassert(ts <= dim);
+	modcheck(dim, ts);
+
+	for (size_t i = 0; i < dim; i += ts) {
+		#pragma oss task in(A[i * dim; dim * ts]) \
+			in(B[0; dim * colsBC]) \
+			out(C[i * colsBC; ts * colsBC]) label("weakmatvec")
+		matmul_base(&A[i * dim], C, &C[i], ts, dim, colsBC);
+	}
+}
+
+#else // ISSTRONG
 
 #if FETCHTASK == 0
 #define THECOND 0
@@ -31,35 +49,42 @@
 #error FETCHTASK value not valid.
 #endif
 
-void matvec_tasks_weak(const double *A, const double *b, double *x,
-                       int rows, int ts, size_t it)
+void matvec_tasks(const double *A, const double *B, double *C,
+                  size_t ts, size_t dim, size_t colsBC, size_t it)
 {
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
+	myassert(ts <= dim);
+	modcheck(dim, ts);
 
-	myassert(rows >= numNodes);
-	myassert(rows % numNodes == 0);
-
-	const size_t rowsPerNode = rows / numNodes;
+	const size_t rowsPerNode = dim / numNodes;
 	myassert(ts <= rowsPerNode);
-	myassert(rowsPerNode % ts == 0);
+	modcheck(rowsPerNode, ts);
 
-	for (size_t i = 0; i < rows; i += rowsPerNode) {
+	for (size_t i = 0; i < dim; i += rowsPerNode) {
 
-		#pragma oss task weakin(A[i * rows; rows * rowsPerNode]) weakin(b[0; rows]) weakout(x[i; rowsPerNode])
+		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])		\
+			weakin(B[0; dim * colsBC])								\
+			weakout(C[i; rowsPerNode * colsBC]) label("weakmatvec")
 		{
 			if (THECOND) {
-				#pragma oss task in(A[i * rows; rows * rowsPerNode]) in(b[0; rows]) out(x[i; rowsPerNode])
+				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
+					in(B[0; dim * colsBC])								\
+					out(C[i; rowsPerNode * colsBC]) label("fetchtask")
 				{
 				}
 			}
 
 			for (size_t j = i; j < i + rowsPerNode; j += ts) {
-				#pragma oss task in(A[j * rows; rows * ts]) in(b[0; rows]) out(x[j; ts])
-				matvec_base(&A[j * rows], b, &x[j], ts, rows);
+				#pragma oss task in(A[j * dim; ts * dim])		\
+					in(B[0; dim * colsBC])						\
+					out(C[j; ts * colsBC]) label("strongmatvec")
+				matmul_base(&A[j * dim], B, &C[j], ts, dim, colsBC);
 			}
 		}
 	}
 }
+
+#endif // ISSTRONG
 
 int main(int argc, char* argv[])
 {
@@ -70,41 +95,40 @@ int main(int argc, char* argv[])
 	const int its = create_optional_cl_int ("iterations", 1);
 	const int print = create_optional_cl_int ("print", 0);
 
-	std::cout << "Initializing data" << std::endl;
+	printf("# Initializing data\n");
 	timer *ttimer = create_timer("Total time");
 
 	double *A = alloc_init(ROWS, ROWS, ts); // this initialized by blocks ts x rows
-	double *b = alloc_init(ROWS, 1, ts);    // this splits the array in ts
-	double *x = alloc_init(ROWS, 1, ROWS);  // This one initializes all the arrays
+	double *B = alloc_init(ROWS, 1, ts);    // this splits the array in ts
+	double *C = alloc_init(ROWS, 1, ROWS);  // This one initializes all the arrays
 	#pragma oss taskwait
 
-	std::cout << "Starting algorithm" << std::endl;
+	printf("# Starting algorithm\n");
 	timer *atimer = create_timer("Algorithm time");
 
 	for (int i = 0; i < its; ++i)
-		matvec_tasks_weak(A, x, b, ROWS, ts, i);
+		matvec_tasks(A, B, C, ts, ROWS, 1, i);
 	#pragma oss taskwait
 
 	stop_timer(atimer);
 
-	std::cout << "Finished algorithm..." << std::endl;
+	printf("# Finished algorithm...\n");
 	stop_timer(ttimer);
 
 	if (print) {
-		matvec_print2d(A, ROWS, ROWS, "matrix_A.mat");
-		matvec_print1d(b, ROWS, "vector_b.mat");
-		matvec_print1d(x, ROWS, "vector_x.mat");
+		printmatrix_task(A, ROWS, ROWS, "matvec");
+		printmatrix_task(B, ROWS, 1, "matvec");
+		printmatrix_task(C, ROWS, 1, "matvec");
 
-		const bool valid = validate(A, x, b, ROWS, ROWS);
-
-		std::cout << "Verification: "
-		          << (valid ? "Success" : "Failed")
-		          << std::endl;
+		if (print > 1) {
+			const bool valid = validate(A, B, C, ROWS, ROWS);
+			printf("# Verification: %s\n", (valid ? "Success" : "Failed"));
+		}
 	}
 
 	free_matrix(A, ROWS * ROWS);
-	free_matrix(x, ROWS);
-	free_matrix(b, ROWS);
+	free_matrix(B, ROWS);
+	free_matrix(C, ROWS);
 
 	const double performance = its * ROWS * ROWS * 2000.0 / getNS_timer(atimer);
 
