@@ -21,6 +21,8 @@ find_package(MERCURIUM REQUIRED)
 
 project(nanos6_benchmarks)
 
+option(WITH_NAMESPACE "Build tests for namespace code" false)
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -41,7 +43,7 @@ configure_file(${PROJECT_SOURCE_DIR}/utils/ArgParserBash/argparse.sh
 
 # Lists of include files
 file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*_ompss2)
-
+# Include all subdirectories with _ompss2 suffix.
 foreach (child ${children})
   if ((IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${child})
       AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/${child}/CMakeLists.txt))
@@ -49,3 +51,13 @@ foreach (child ${children})
     add_subdirectory(${child})
   endif ()
 endforeach ()
+
+
+if (WITH_NAMESPACE)
+  message("-- Using NAMESPACE")
+  set(USE_NAMESPACE_TOML "use_namespace = true")
+endif ()
+
+#add the install targets
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/log")
+configure_file(nanos6.toml nanos6.toml)
