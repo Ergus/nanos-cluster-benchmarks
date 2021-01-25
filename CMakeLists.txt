@@ -28,7 +28,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 add_compile_options("--ompss-2")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
-find_package(Python REQUIRED COMPONENTS Interpreter NumPy)
+find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)
