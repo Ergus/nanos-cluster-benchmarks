@@ -86,6 +86,12 @@ void matvec_tasks(const double *A, const double *B, double *C,
 
 #endif // ISSTRONG
 
+#if ISMATVEC
+#define PREFIX "matvec"
+#else
+#define PREFIX "matmul"
+#endif
+
 int main(int argc, char* argv[])
 {
 	init_args(argc, argv);
@@ -98,16 +104,18 @@ int main(int argc, char* argv[])
 	printf("# Initializing data\n");
 	timer *ttimer = create_timer("Total time");
 
-	double *A = alloc_init(ROWS, ROWS, ts); // this initialized by blocks ts x rows
-	double *B = alloc_init(ROWS, 1, ts);    // this splits the array in ts
-	double *C = alloc_init(ROWS, 1, ROWS);  // This one initializes all the arrays
+	const size_t colsBC = (ISMATVEC ? 1 : ROWS);
+
+	double *A = alloc_init(ROWS, ROWS, ts);      // this initialized by blocks ts x rows
+	double *B = alloc_init(ROWS, colsBC, ts);    // this splits the array in ts
+	double *C = alloc_init(ROWS, colsBC, ROWS);  // This one initializes all the arrays
 	#pragma oss taskwait
 
 	printf("# Starting algorithm\n");
 	timer *atimer = create_timer("Algorithm time");
 
 	for (int i = 0; i < its; ++i)
-		matvec_tasks(A, B, C, ts, ROWS, 1, i);
+		matvec_tasks(A, B, C, ts, ROWS, colsBC, i);
 	#pragma oss taskwait
 
 	stop_timer(atimer);
@@ -116,9 +124,9 @@ int main(int argc, char* argv[])
 	stop_timer(ttimer);
 
 	if (print) {
-		printmatrix_task(A, ROWS, ROWS, "matvec");
-		printmatrix_task(B, ROWS, 1, "matvec");
-		printmatrix_task(C, ROWS, 1, "matvec");
+		printmatrix_task(A, ROWS, ROWS, PREFIX);
+		printmatrix_task(B, ROWS, colsBC, PREFIX);
+		printmatrix_task(C, ROWS, colsBC, PREFIX);
 
 		if (print > 1) {
 			const bool valid = validate(A, B, C, ROWS, ROWS);
@@ -127,8 +135,8 @@ int main(int argc, char* argv[])
 	}
 
 	free_matrix(A, ROWS * ROWS);
-	free_matrix(B, ROWS);
-	free_matrix(C, ROWS);
+	free_matrix(B, ROWS * colsBC);
+	free_matrix(C, ROWS * colsBC);
 
 	const double performance = its * ROWS * ROWS * 2000.0 / getNS_timer(atimer);
 

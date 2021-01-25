@@ -15,20 +15,54 @@
 
 # Add the executables and link
 add_executable(matvec_strong matvec.c)
-target_compile_definitions(matvec_strong PUBLIC -DISSTRONG)
+target_compile_definitions(matvec_strong
+  PUBLIC -DISSTRONG
+  PUBLIC -DISMATVEC=1)
 target_link_libraries (matvec_strong argparser)
 
 add_executable(matvec_weak_nofetch matvec.c)
-target_compile_definitions(matvec_weak_nofetch PUBLIC -DFETCHTASK=0)
+target_compile_definitions(matvec_weak_nofetch
+  PUBLIC -DFETCHTASK=0
+  PUBLIC -DISMATVEC=1)
 target_link_libraries(matvec_weak_nofetch argparser)
 
 add_executable(matvec_weak_fetchall matvec.c)
-target_compile_definitions(matvec_weak_fetchall PUBLIC -DFETCHTASK=1)
+target_compile_definitions(matvec_weak_fetchall
+  PUBLIC -DFETCHTASK=1
+  PUBLIC -DISMATVEC=1)
 target_link_libraries(matvec_weak_fetchall argparser)
 
 add_executable(matvec_weak_fetchfirst matvec.c)
-target_compile_definitions(matvec_weak_fetchfirst PUBLIC -DFETCHTASK=2)
+target_compile_definitions(matvec_weak_fetchfirst
+  PUBLIC -DFETCHTASK=2
+  PUBLIC -DISMATVEC=1)
 target_link_libraries(matvec_weak_fetchfirst argparser)
+
+# Add the executables and link
+add_executable(matmul_strong matvec.c)
+target_compile_definitions(matmul_strong
+  PUBLIC -DISSTRONG
+  PUBLIC -DISMATVEC=0)
+target_link_libraries (matmul_strong argparser)
+
+add_executable(matmul_weak_nofetch matvec.c)
+target_compile_definitions(matmul_weak_nofetch
+  PUBLIC -DFETCHTASK=0
+  PUBLIC -DISMATVEC=0)
+target_link_libraries(matmul_weak_nofetch argparser)
+
+add_executable(matmul_weak_fetchall matvec.c)
+target_compile_definitions(matmul_weak_fetchall
+  PUBLIC -DFETCHTASK=1
+  PUBLIC -DISMATVEC=0)
+target_link_libraries(matmul_weak_fetchall argparser)
+
+add_executable(matmul_weak_fetchfirst matvec.c)
+target_compile_definitions(matmul_weak_fetchfirst
+  PUBLIC -DFETCHTASK=2
+  PUBLIC -DISMATVEC=0)
+target_link_libraries(matmul_weak_fetchfirst argparser)
+
 
 # install (copy) scripts
 configure_file(validate.py validate.py @ONLY)
