@@ -28,7 +28,6 @@ extern "C" {
 #endif
 
 // C headers
-#include <mpi.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -50,10 +49,10 @@ extern "C" {
 
 #define frand()(4.*(double)rand()/(RAND_MAX)-2.) //uniform rng in [-2,2]
 
-#define printme() {	  \
+#define printme() {										   \
 		fprintf(stderr,"Func: %s in %s:%d (process %s)\n", \
-		        __PRETTY_FUNCTION__, __FILE__, __LINE__, \
-		        getenv("OMPI_COMM_WORLD_RANK")); \
+		        __PRETTY_FUNCTION__, __FILE__, __LINE__,   \
+		        getenv("OMPI_COMM_WORLD_RANK"));		   \
 	}
 
 #define modcheck(a, b){	  \
@@ -61,7 +60,7 @@ extern "C" {
 		if(themod) { \
 			fprintf(stderr,"Error: %s %% %s = %d\n", #a, #b, themod); \
 			printme(); \
-			MPI_Abort(MPI_COMM_WORLD, -1); \
+			exit(EXIT_FAILURE); \
 		} \
 	}
 
@@ -69,7 +68,7 @@ extern "C" {
 		if (!(cond)) {											\
 			fprintf(stderr, "%s%s:%u Assertion `%s' failed.\n", \
 			        __func__, __FILE__, __LINE__, #cond);		\
-			abort();											\
+			exit(EXIT_FAILURE);									\
 		}														\
 	}
 
