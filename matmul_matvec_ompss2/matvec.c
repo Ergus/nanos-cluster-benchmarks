@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 	const int print = create_optional_cl_int ("print", 0);
 
 	printf("# Initializing data\n");
-	timer *ttimer = create_timer("Total time");
+	timer ttimer = create_timer("Total time");
 
 	const size_t colsBC = (ISMATVEC ? 1 : ROWS);
 
@@ -112,16 +112,16 @@ int main(int argc, char* argv[])
 	#pragma oss taskwait
 
 	printf("# Starting algorithm\n");
-	timer *atimer = create_timer("Algorithm time");
+	timer atimer = create_timer("Algorithm time");
 
 	for (int i = 0; i < its; ++i)
 		matvec_tasks(A, B, C, ts, ROWS, colsBC, i);
 	#pragma oss taskwait
 
-	stop_timer(atimer);
+	stop_timer(&atimer);
 
 	printf("# Finished algorithm...\n");
-	stop_timer(ttimer);
+	stop_timer(&ttimer);
 
 	if (print) {
 		printmatrix_task(A, ROWS, ROWS, PREFIX);
@@ -138,12 +138,10 @@ int main(int argc, char* argv[])
 	free_matrix(B, ROWS * colsBC);
 	free_matrix(C, ROWS * colsBC);
 
-	const double performance = its * ROWS * ROWS * 2000.0 / getNS_timer(atimer);
+	const double performance = its * ROWS * ROWS * 2000.0 / getNS_timer(&atimer);
 
 	create_reportable_double("performance", performance);
 	report_args();
-	free_timer(atimer);
-	free_timer(ttimer);
 	free_args();
 
 	return 0;
