@@ -132,6 +132,14 @@ extern "C" {
 		}
 	}
 
+	int count_sched_cpus()
+	{
+		cpu_set_t mask;
+		if (sched_getaffinity(0, sizeof(mask), &mask) == 0)
+			return CPU_COUNT(&mask);
+		return -1;
+	}
+
 #ifdef __cplusplus
 }
 #endif
