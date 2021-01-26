@@ -65,8 +65,9 @@ target_link_libraries(matmul_weak_fetchfirst argparser)
 
 
 # install (copy) scripts
-configure_file(validate.py validate.py @ONLY)
-configure_file(submiter_mn.sh submiter_mn.sh @ONLY)
 configure_file(submit_mn.sh submit_mn.sh @ONLY)
-configure_file(extrae_template.xml extrae_template.xml COPYONLY)
-configure_file(trace.sh trace.sh COPYONLY)
+configure_file(submiter_mn.sh submiter_mn.sh @ONLY)
+
+# configure_file(validate.py validate.py @ONLY)
+# configure_file(extrae_template.xml extrae_template.xml COPYONLY)
+# configure_file(trace.sh trace.sh COPYONLY)

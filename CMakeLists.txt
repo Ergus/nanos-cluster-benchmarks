@@ -61,4 +61,4 @@ endif ()
 
 #add the install targets
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/log")
-configure_file(nanos6.toml nanos6.toml)
+configure_file(nanos6.toml nanos6.toml @ONLY)

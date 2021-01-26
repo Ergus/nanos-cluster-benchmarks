@@ -131,7 +131,7 @@
 	# suitable address. Default is 0x00000000
 	va_start = 0x00000000
 	# Use namespace code.
-	@USE_NAMESPACE_TOML@
+	use_namespace = true
 
 [memory]
 	[memory.pool]

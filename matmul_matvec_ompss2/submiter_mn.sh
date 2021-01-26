@@ -20,6 +20,7 @@ add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a w -l wtime -h "Wall time limit for jobs" -t timer -d 01:00:00
 add_argument -a q -l queue -h "queue" -t enum -e "debug bsc_cs xlarge" -d "bsc_cs"
 add_argument -a R -l repeats -h "Repetitions per program default[1]" -t int -d 5
+add_argument -a N -l namespace -h "Namespace propagation enabled" -t bool -d true
 
 parse_args "$@"
 printargs
@@ -47,5 +48,5 @@ for node in ${nodes[@]}; do
  		   --job-name=${jobname} \
  		   --output="${resdir}/%x_%2a_%j.out" \
  		   --error="${resdir}/%x_%2a_%j.err" \
- 		   ./submit_mn.sh -R ${ARGS[R]} -x ${ARGS[x]}
+ 		   ./submit_mn.sh -R ${ARGS[R]} -x ${ARGS[x]} -N ${ARGS[N]}
 done
