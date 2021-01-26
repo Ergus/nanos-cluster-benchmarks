@@ -28,6 +28,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_compile_options("--ompss-2")
+add_compile_definitions(_GNU_SOURCE)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
 find_package(Python MODULE COMPONENTS Interpreter NumPy)

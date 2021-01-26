@@ -97,25 +97,25 @@ int main(int argc, char* argv[])
 	init_args(argc, argv);
 
 	const int ROWS = create_cl_int ("Rows");
-	const int ts = create_cl_int ("Tasksize");
-	const int its = create_optional_cl_int ("iterations", 1);
-	const int print = create_optional_cl_int ("print", 0);
+	const int TS = create_cl_int ("Tasksize");
+	const int ITS = create_optional_cl_int ("Iterations", 1);
+	const int PRINT = create_optional_cl_int ("Print", 0);
 
 	printf("# Initializing data\n");
 	timer ttimer = create_timer("Total time");
 
 	const size_t colsBC = (ISMATVEC ? 1 : ROWS);
 
-	double *A = alloc_init(ROWS, ROWS, ts);      // this initialized by blocks ts x rows
-	double *B = alloc_init(ROWS, colsBC, ts);    // this splits the array in ts
+	double *A = alloc_init(ROWS, ROWS, TS);      // this initialized by blocks ts x rows
+	double *B = alloc_init(ROWS, colsBC, TS);    // this splits the array in ts
 	double *C = alloc_init(ROWS, colsBC, ROWS);  // This one initializes all the arrays
 	#pragma oss taskwait
 
 	printf("# Starting algorithm\n");
 	timer atimer = create_timer("Algorithm time");
 
-	for (int i = 0; i < its; ++i)
-		matvec_tasks(A, B, C, ts, ROWS, colsBC, i);
+	for (int i = 0; i < ITS; ++i)
+		matvec_tasks(A, B, C, TS, ROWS, colsBC, i);
 	#pragma oss taskwait
 
 	stop_timer(&atimer);
@@ -123,12 +123,12 @@ int main(int argc, char* argv[])
 	printf("# Finished algorithm...\n");
 	stop_timer(&ttimer);
 
-	if (print) {
+	if (PRINT) {
 		printmatrix_task(A, ROWS, ROWS, PREFIX);
 		printmatrix_task(B, ROWS, colsBC, PREFIX);
 		printmatrix_task(C, ROWS, colsBC, PREFIX);
 
-		if (print > 1) {
+		if (PRINT > 1) {
 			const bool valid = validate(A, B, C, ROWS, ROWS);
 			printf("# Verification: %s\n", (valid ? "Success" : "Failed"));
 		}
@@ -138,9 +138,12 @@ int main(int argc, char* argv[])
 	free_matrix(B, ROWS * colsBC);
 	free_matrix(C, ROWS * colsBC);
 
-	const double performance = its * ROWS * ROWS * 2000.0 / getNS_timer(&atimer);
+	create_reportable_int("worldsize", nanos6_get_num_cluster_nodes());
+	create_reportable_int("cpu_count", count_sched_cpus());
 
+	const double performance = ITS * ROWS * ROWS * 2000.0 / getNS_timer(&atimer);
 	create_reportable_double("performance", performance);
+
 	report_args();
 	free_args();
 
