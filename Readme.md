@@ -34,8 +34,6 @@ requirements](https://github.com/bsc-pm/nanos6/blob/master/docs/cluster/README-C
 
 3. [Nanos6](https://pm.bsc.es/ftp/ompss-2/doc/user-guide/build/nanos6.html)
 
-4. [Liberep](https://pm.bsc.es/gitlab/nanos6/liberep) (Avoid to use this; it will be removed in the near future)
-
 To build the code you need first to install all the dependencies above. Then just:
 
 ```console
@@ -46,6 +44,14 @@ cd build
 cmake ..
 make
 ```
+
+When cloning `--recursive` some submodules will be downloaded and compiled automatically.
+
+4. [ArgParserC](https://github.com/Ergus/ArgParserC.git)
+
+5. [cmacros](https://github.com/Ergus/cmacros.git)
+
+6. [ArgParserBash](https://github.com/Ergus/ArgParseBash.git)
 
 After this all the benchmarks should be build inside a directory with
 the same name than the original one in the project's root directory.
@@ -76,3 +82,15 @@ same directory.
    
 4. Use the [linux kernel coding
    style](https://www.kernel.org/doc/html/v4.10/process/coding-style.html).
+
+## Tests with CTest
+
+Some very simple set of tests are added when a **Python** and
+**NumPy** are detected. These are very helpfull during developement
+and the addition is optional.
+
+It is recommended to add such tests in order to check for correctness
+in the benchmarks, the runtime and the executions during
+modifications.
+
+
