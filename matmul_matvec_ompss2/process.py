@@ -15,20 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import sys
 import os
 import re
+import pandas as pd 
 
 re_ignore = re.compile('# [^-=]+')    # Comments like # Anything
 re_pair=re.compile('([\w,\s]+): (\d+(\.\d+(e\+\d+)?)?)') # KEY: number
 re_next=re.compile('# -+')            # Divisor like # ---------
-re_report=re.compile('# =+')                # Divisor like # =========
+re_report=re.compile('# =+')          # Divisor like # =========
 
+def process(arr):
+    Stime = pd.Series([a['Algorithm time'] for a in arr])
+    print('Algorithm time\n',Stime.describe(percentiles=[.5]))
 
 def process_file(input_file):
     '''Process the files and print the data in json format.'''
     line_dict = {}
+    arr = []
     count = 0
 
     for line in input_file:
@@ -47,15 +51,23 @@ def process_file(input_file):
 
         # --------------
         if re_next.match(line):
+            print(line_dict)
+            arr.append(line_dict)
             count = count + 1
-            print (line_dict)
-            line_dict.clear()
+            line_dict = {}
             continue
 
         # ==============
         if re_report.match(line):
             if count > 0:
+                process(arr)
+                arr.clear()
                 count = 0
+            continue
+
+    if count > 0:
+        process(arr)
+
 
 if __name__ == "__main__":
     if (len(sys.argv) >= 1):
