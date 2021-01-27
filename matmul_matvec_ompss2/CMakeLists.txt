@@ -20,49 +20,38 @@ target_compile_definitions(matvec_strong
   PUBLIC -DISMATVEC=1)
 target_link_libraries (matvec_strong argparser)
 
-add_executable(matvec_weak_nofetch matvec.c)
-target_compile_definitions(matvec_weak_nofetch
-  PUBLIC -DFETCHTASK=0
-  PUBLIC -DISMATVEC=1)
-target_link_libraries(matvec_weak_nofetch argparser)
-
-add_executable(matvec_weak_fetchall matvec.c)
-target_compile_definitions(matvec_weak_fetchall
-  PUBLIC -DFETCHTASK=1
-  PUBLIC -DISMATVEC=1)
-target_link_libraries(matvec_weak_fetchall argparser)
-
-add_executable(matvec_weak_fetchfirst matvec.c)
-target_compile_definitions(matvec_weak_fetchfirst
-  PUBLIC -DFETCHTASK=2
-  PUBLIC -DISMATVEC=1)
-target_link_libraries(matvec_weak_fetchfirst argparser)
-
-# Add the executables and link
 add_executable(matmul_strong matvec.c)
 target_compile_definitions(matmul_strong
   PUBLIC -DISSTRONG
   PUBLIC -DISMATVEC=0)
 target_link_libraries (matmul_strong argparser)
 
-add_executable(matmul_weak_nofetch matvec.c)
-target_compile_definitions(matmul_weak_nofetch
-  PUBLIC -DFETCHTASK=0
-  PUBLIC -DISMATVEC=0)
-target_link_libraries(matmul_weak_nofetch argparser)
 
-add_executable(matmul_weak_fetchall matvec.c)
-target_compile_definitions(matmul_weak_fetchall
-  PUBLIC -DFETCHTASK=1
-  PUBLIC -DISMATVEC=0)
-target_link_libraries(matmul_weak_fetchall argparser)
+# The order is important
+SET(TESTLIST matmul matvec)
+foreach (ISMATVEC 0;1)
+  list(GET TESTLIST ${ISMATVEC} TEST)
 
-add_executable(matmul_weak_fetchfirst matvec.c)
-target_compile_definitions(matmul_weak_fetchfirst
-  PUBLIC -DFETCHTASK=2
-  PUBLIC -DISMATVEC=0)
-target_link_libraries(matmul_weak_fetchfirst argparser)
+  SET(FETCHLIST nofetch fetchall fetchfirst)
+  foreach (FETCHTASK 0;1;2)
+    list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
 
+    SET(NODELIST nonode node)
+    foreach (WITH_NODE 0;1)
+      list(GET NODELIST ${WITH_NODE} NODESUFIX)
+
+      set(executable "${TEST}_weak_${FETCHSUFIX}_${NODESUFIX}")
+      message("Add benchmark: ${executable}")
+      add_executable(${executable} matvec.c)
+      target_compile_definitions(${executable}
+	PUBLIC -DFETCHTASK=${FETCHTASK}
+	PUBLIC -DWITH_NODE=${WITH_NODE}
+	PUBLIC -DISMATVEC=${ISMATVEC})
+      target_link_libraries(${executable} argparser)
+
+    endforeach ()
+  endforeach ()
+endforeach ()
 
 # install (copy) scripts
 configure_file(submit_mn.sh submit_mn.sh @ONLY)

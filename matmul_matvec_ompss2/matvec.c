@@ -21,7 +21,7 @@
 
 #include "matvec.h"
 
-#ifdef ISSTRONG
+#if ISSTRONG == 1
 
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it)
@@ -45,9 +45,50 @@ void matvec_tasks(const double *A, const double *B, double *C,
 #define THECOND 1
 #elif FETCHTASK == 2
 #define THECOND it < 1
-#else
+#else  // FETCHTASK
 #error FETCHTASK value not valid.
-#endif
+#endif // FETCHTASK
+
+#if WITH_NODE == 1
+
+void matvec_tasks(const double *A, const double *B, double *C,
+                  size_t ts, size_t dim, size_t colsBC, size_t it)
+{
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+	myassert(ts <= dim);
+	modcheck(dim, ts);
+
+	const size_t rowsPerNode = dim / numNodes;
+	myassert(ts <= rowsPerNode);
+	modcheck(rowsPerNode, ts);
+
+	for (size_t i = 0; i < dim; i += rowsPerNode) {
+
+		int nodeid = i / rowsPerNode;
+
+		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])		\
+			weakin(B[0; dim * colsBC])								\
+			weakout(C[i; rowsPerNode * colsBC]) node(nodeid) label("weakmatvec")
+		{
+			if (THECOND) {
+				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
+					in(B[0; dim * colsBC])								\
+					out(C[i; rowsPerNode * colsBC]) node(nodeid) label("fetchtask")
+				{
+				}
+			}
+
+			for (size_t j = i; j < i + rowsPerNode; j += ts) {
+				#pragma oss task in(A[j * dim; ts * dim])		\
+					in(B[0; dim * colsBC])						\
+					out(C[j; ts * colsBC]) node(nodeid) label("strongmatvec")
+				matmul_base(&A[j * dim], B, &C[j], ts, dim, colsBC);
+			}
+		}
+	}
+}
+
+#else // WITH_NODE
 
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it)
@@ -84,9 +125,11 @@ void matvec_tasks(const double *A, const double *B, double *C,
 	}
 }
 
+#endif // WITH_NODE
+
 #endif // ISSTRONG
 
-#if ISMATVEC
+#if ISMATVEC == 1
 #define PREFIX "matvec"
 #else
 #define PREFIX "matmul"
@@ -104,7 +147,7 @@ int main(int argc, char* argv[])
 	printf("# Initializing data\n");
 	timer ttimer = create_timer("Total time");
 
-	const size_t colsBC = (ISMATVEC ? 1 : ROWS);
+	const size_t colsBC = (ISMATVEC == 1 ? 1 : ROWS);
 
 	double *A = alloc_init(ROWS, ROWS, TS);      // this initialized by blocks ts x rows
 	double *B = alloc_init(ROWS, colsBC, TS);    // this splits the array in ts
@@ -140,6 +183,7 @@ int main(int argc, char* argv[])
 
 	create_reportable_int("worldsize", nanos6_get_num_cluster_nodes());
 	create_reportable_int("cpu_count", count_sched_cpus());
+	create_reportable_int("namespace_enabled", nanos6_get_namespace_is_enabled());
 
 	const double performance = ITS * ROWS * ROWS * 2000.0 / getNS_timer(&atimer);
 	create_reportable_double("performance", performance);
