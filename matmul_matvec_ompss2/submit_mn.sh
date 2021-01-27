@@ -8,23 +8,23 @@
 source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a R -l repeats -h "Repetitions per program default[1]" -t int
-add_argument -a N -l namespace -h "Namespace propagation enabled" -t bool
+add_argument -a N -l namespace -h "Namespace propagation enabled" -t int
 
 parse_args "$@"
 printargs >&2
 
-dims=(1024 4096 8192)
-blocksizes=(64 128 256)
+dims=(1024 2048 4096)
+blocksizes=(32 64 128)
 
 REPEATS=${ARGS[R]}
 
 # special nanos variables needed to set.
 export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
 
-if [ ${ARGS[x]} = true ]; then
-	export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=false"
+if [ ${ARGS[N]} = 1 ]; then
+	export NANOS6_CONFIG_OVERRIDE="version.debug=false,cluster.disable_remote=false"
 else
-	export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=true"
+	export NANOS6_CONFIG_OVERRIDE="version.debug=false,cluster.disable_remote=true"
 fi
 
 # Start run here printing run info header
