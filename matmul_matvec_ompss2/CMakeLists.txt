@@ -56,6 +56,7 @@ endforeach ()
 # install (copy) scripts
 configure_file(submit_mn.sh submit_mn.sh @ONLY)
 configure_file(submiter_mn.sh submiter_mn.sh @ONLY)
+configure_file(process.py process.py COPYONLY)
 
 # configure_file(validate.py validate.py @ONLY)
 # configure_file(extrae_template.xml extrae_template.xml COPYONLY)
