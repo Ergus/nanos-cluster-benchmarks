@@ -21,7 +21,7 @@ find_package(MERCURIUM REQUIRED)
 
 project(nanos6_benchmarks)
 
-option(WITH_NAMESPACE "Build tests for namespace code" false)
+option(WITH_NAMESPACE "Build tests for namespace code" true)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -53,10 +53,16 @@ foreach (child ${children})
   endif ()
 endforeach ()
 
-
+# For the toml file
+set(USE_NAMESPACE_TOML false)
 if (WITH_NAMESPACE)
   message("-- Using NAMESPACE")
-  set(USE_NAMESPACE_TOML "use_namespace = true")
+  set(USE_NAMESPACE_TOML true)
+endif ()
+
+set(VERSION_DEBUG_TOML true)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(VERSION_DEBUG_TOML false)
 endif ()
 
 #add the install targets

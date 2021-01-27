@@ -10,7 +10,7 @@
 	# Choose whether the runtime runs with debug symbols and internal asserts. Enabling this option
 	# may produce significant overheads, so production or performance executions should disable this
 	# option. Default is false
-	debug = true
+	debug = @VERSION_DEBUG_TOML@
 	# Choose the dependency system implementation. Default is "discrete"
 	# Possible values: "discrete", "regions"
 	dependencies = "regions"
@@ -131,7 +131,7 @@
 	# suitable address. Default is 0x00000000
 	va_start = 0x00000000
 	# Use namespace code.
-	use_namespace = true
+	use_namespace = @USE_NAMESPACE_TOML@
 
 [memory]
 	[memory.pool]

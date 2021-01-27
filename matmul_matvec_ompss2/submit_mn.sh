@@ -22,9 +22,9 @@ REPEATS=${ARGS[R]}
 export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
 
 if [ ${ARGS[N]} = 1 ]; then
-	export NANOS6_CONFIG_OVERRIDE="version.debug=false,cluster.disable_remote=false"
+	export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=false"
 else
-	export NANOS6_CONFIG_OVERRIDE="version.debug=false,cluster.disable_remote=true"
+	export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=true"
 fi
 
 # Start run here printing run info header

@@ -27,7 +27,7 @@ printargs
 
 now=$(date +%F_%H-%M-%S)
 name=$(basename ${ARGS[x]})
-resdir="results/${name}_${now}"
+resdir="results/${name}_${ARGS[N]}_${now}"
 
 mkdir -p ${resdir}
 
