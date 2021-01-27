@@ -1,37 +1,27 @@
 <?xml version='1.0'?>
 
 <trace enabled="yes"
-       home="EXTRAEHOME"
+       home="${EXTRAE_HOME}"
        initial-mode="detail"
        type="paraver"
        >
 
   <mpi enabled="yes">
-    <counters enabled="no" />
+    <counters enabled="yes" />
   </mpi>
-
-  <openmp enabled="no" ompt="no">
-    <locks enabled="no" />
-	<taskloop enabled="no" />
-    <counters enabled="no" />
-  </openmp>
 
   <pthread enabled="yes">
     <locks enabled="no" />
-    <counters enabled="no" />
+    <counters enabled="yes" />
   </pthread>
 
   <callers enabled="yes">
-    <mpi enabled="yes">1</mpi>
+    <mpi enabled="yes">1-3</mpi>
     <sampling enabled="no">1-5</sampling>
     <dynamic-memory enabled="no">1-3</dynamic-memory>
     <input-output enabled="no">1-3</input-output>
     <syscall enabled="no">1-3</syscall>
   </callers>
-
-  <user-functions enabled="no" list="/home/bsc41/bsc41273/user-functions.dat" exclude-automatic-functions="no">
-    <counters enabled="yes" />
-  </user-functions>
 
   <counters enabled="no">
     <cpu enabled="yes" starting-set-distribution="1">
@@ -49,10 +39,10 @@
   </counters>
 
   <storage enabled="yes">
-    <trace-prefix enabled="yes">PREFIX</trace-prefix>
+    <trace-prefix enabled="yes">TRACE</trace-prefix>
     <size enabled="no">5</size>
-    <temporal-directory enabled="yes">TMPDIR</temporal-directory>
-    <final-directory enabled="yes">FINALDIR</final-directory>
+    <temporal-directory enabled="yes">@CMAKE_CURRENT_BINARY_DIR@</temporal-directory>
+    <final-directory enabled="yes">@CMAKE_CURRENT_BINARY_DIR@</final-directory>
   </storage>
 
   <buffer enabled="yes">
@@ -65,7 +55,7 @@
     <global-ops enabled="no"></global-ops>
   </trace-control>
 
-  <others enabled="no">
+  <others enabled="yes">
     <minimum-time enabled="no">10M</minimum-time>
     <finalize-on-signal enabled="yes" 
 			SIGUSR1="no" SIGUSR2="no" SIGINT="yes"
@@ -91,7 +81,7 @@
 
   <syscall enabled="no" />
 
-  <merge enabled="yes"
+  <merge enabled="no"
 	 synchronization="default"
 	 binary="BINARY"
 	 tree-fan-out="NPR"
