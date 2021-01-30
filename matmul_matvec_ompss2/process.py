@@ -18,21 +18,33 @@
 import sys
 import os
 import re
-import pandas as pd 
+from statistics import mean, stdev
+
+import json
+json.encoder.FLOAT_REPR = lambda o: format(o, '.%2f')
 
 re_ignore = re.compile('# [^-=]+')    # Comments like # Anything
-re_pair=re.compile('([\w,\s]+): (\d+(\.\d+(e\+\d+)?)?)') # KEY: number
-re_next=re.compile('# -+')            # Divisor like # ---------
-re_report=re.compile('# =+')          # Divisor like # =========
+re_pair = re.compile('(?P<key>[\w,\s]+): (?P<value>\d+(?P<float>\.\d+(e\+\d+)?)?)') # KEY: number
+re_next = re.compile('# -+')            # Divisor like # ---------
+re_report = re.compile('# =+')          # Divisor like # =========
+re_value = re.compile('((\w+)|performance$ time)$')
 
-def process(arr):
-    Stime = pd.Series([a['Algorithm time'] for a in arr])
-    print('Algorithm time\n',Stime.describe(percentiles=[.5]))
+results = {}
+
+def process_group(a_dict):
+    """Process group of executions with same parameters."""
+    for key in a_dict:
+        if isinstance(a_dict[key], list):
+            m = mean(a_dict[key])
+            s = stdev(a_dict[key])
+            a_dict[key] = (m, s)
+
+    print(json.dumps(a_dict))
+
 
 def process_file(input_file):
     '''Process the files and print the data in json format.'''
     line_dict = {}
-    arr = []
     count = 0
 
     for line in input_file:
@@ -40,39 +52,47 @@ def process_file(input_file):
         if re_ignore.match(line):
             continue
 
-        # A pair
+        # A pair value
         match = re_pair.match(line)
         if match:
-            if match.groups()[2]:
-                line_dict[match.groups()[0]] = float(match.groups()[1])
-            else:
-                line_dict[match.groups()[0]] = int(match.groups()[1])
+            key = match.groupdict()['key']
+            if match.groupdict()['float']: # it is a float so will be averaged later
+                fvalue = float(match.groupdict()['value'])
+                if key in line_dict:
+                    line_dict[key].append(fvalue)
+                else:
+                    line_dict[key] = [fvalue]
+            else:                  # it is a key so will be used as a key/info
+                ivalue = int(match.groupdict()['value'])
+                if key in line_dict:
+                    assert line_dict[key] == ivalue
+                    assert count > 0
+                else:
+                    line_dict[key] = ivalue
+
             continue
 
         # --------------
         if re_next.match(line):
-            print(line_dict)
-            arr.append(line_dict)
             count = count + 1
-            line_dict = {}
             continue
 
         # ==============
         if re_report.match(line):
             if count > 0:
-                process(arr)
-                arr.clear()
+                process_group(line_dict)
+                line_dict = {}
                 count = 0
             continue
 
     if count > 0:
-        process(arr)
+        process_group(line_dict)
 
 
 if __name__ == "__main__":
-    if (len(sys.argv) >= 1):
+    for fname in sys.argv[1:]:
         try:
-            with open(sys.argv[1]) as f:
+            with open(fname) as f:
                 # basename = os.path.splitext(sys.argv[1])[0]
                 process_file(f)
 
