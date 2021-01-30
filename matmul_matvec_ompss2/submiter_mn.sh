@@ -46,7 +46,7 @@ for node in ${nodes[@]}; do
 		   --time=${ARGS[w]} \
 		   --qos=${ARGS[q]} \
  		   --job-name=${jobname} \
- 		   --output="${resdir}/%x_%2a_%j.out" \
- 		   --error="${resdir}/%x_%2a_%j.err" \
+ 		   --output="${resdir}/%x_%j.out" \
+ 		   --error="${resdir}/%x_%j.err" \
  		   ./submit_mn.sh -R ${ARGS[R]} -x ${ARGS[x]} -N ${ARGS[N]}
 done
