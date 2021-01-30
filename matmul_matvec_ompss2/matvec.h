@@ -22,9 +22,7 @@
 extern "C" {
 #endif
 
-#ifdef NANOS6
 #include <nanos6/debug.h>
-#endif
 
 #include "cmacros/macros.h"
 
