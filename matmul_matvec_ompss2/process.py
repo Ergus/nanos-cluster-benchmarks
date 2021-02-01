@@ -21,7 +21,6 @@ import re
 from statistics import mean, stdev
 
 import json
-json.encoder.FLOAT_REPR = lambda o: format(o, '.%2f')
 
 re_ignore = re.compile('# [^-=]+')    # Comments like # Anything
 re_pair = re.compile('(?P<key>[\w,\s]+): (?P<value>\d+(?P<float>\.\d+(e\+\d+)?)?)') # KEY: number

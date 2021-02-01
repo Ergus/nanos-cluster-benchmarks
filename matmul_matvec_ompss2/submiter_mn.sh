@@ -17,10 +17,10 @@
 
 source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
-add_argument -a w -l wtime -h "Wall time limit for jobs" -t timer -d 01:00:00
+add_argument -a w -l wtime -h "Wall time limit for jobs" -t timer -d 08:00:00
 add_argument -a q -l queue -h "queue" -t enum -e "debug bsc_cs xlarge" -d "bsc_cs"
 add_argument -a R -l repeats -h "Repetitions per program default[1]" -t int -d 5
-add_argument -a N -l namespace -h "Namespace propagation enabled" -t int -d 1
+add_argument -a N -l namespace -h "Namespace propagation enabled" -t int -d 5
 
 parse_args "$@"
 printargs
