@@ -54,6 +54,7 @@ void matvec_tasks(const double *A, const double *B, double *C,
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it)
 {
+	printf("# matvec_tasks_node FETCHTASK %d\n", FETCHTASK);
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(ts <= dim);
 	modcheck(dim, ts);
@@ -93,6 +94,7 @@ void matvec_tasks(const double *A, const double *B, double *C,
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it)
 {
+	printf("# matvec_tasks_nonode FETCHTASK %d\n", FETCHTASK);
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(ts <= dim);
 	modcheck(dim, ts);
@@ -185,7 +187,9 @@ int main(int argc, char* argv[])
 	create_reportable_int("cpu_count", nanos6_get_num_cpus());
 	create_reportable_int("namespace_enabled", nanos6_get_namespace_is_enabled());
 
-	const double performance = ITS * ROWS * ROWS * 2000.0 / getNS_timer(&atimer);
+	const double performance =
+		ITS * ROWS * ROWS * colsBC * 2000.0 / getNS_timer(&atimer);
+
 	create_reportable_double("performance", performance);
 
 	report_args();
