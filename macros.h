@@ -36,6 +36,10 @@ extern "C" {
 #define omp_get_thread_num() 0
 #define omp_set_num_threads(var) {}
 #define omp_set_dynamic(NUM)
+#define omp_get_max_threads() 1
+
+#define omp_set_schedule(...)
+#define omp_sched_static
 #endif
 
 #include <stdio.h>
