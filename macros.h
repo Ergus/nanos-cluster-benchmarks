@@ -79,9 +79,9 @@ extern "C" {
 #endif
 
 
-	void __print(const double * const mat,
-	             const size_t rows, const size_t cols,
-	             const char prefix[64], const char name[64])
+	static inline void __print(const double * const mat,
+	                           const size_t rows, const size_t cols,
+	                           const char prefix[64], const char name[64])
 	{
 		char filename[256];
 		sprintf(filename,"%s_%s.mat", prefix, name);
@@ -106,8 +106,8 @@ extern "C" {
 	__print(mat, rows, cols, prefix, #mat)
 
 
-	void matrix_init(double * const __restrict__ array,
-                 const size_t rows, const size_t cols, int seed)
+	static inline void matrix_init(double * const __restrict__ array,
+	                               const size_t rows, const size_t cols, int seed)
 	{
 		const size_t fullsize = rows * cols;
 
@@ -131,7 +131,7 @@ extern "C" {
 		}
 	}
 
-	int count_sched_cpus()
+	static inline int count_sched_cpus()
 	{
 		cpu_set_t mask;
 		if (sched_getaffinity(0, sizeof(mask), &mask) == 0)
