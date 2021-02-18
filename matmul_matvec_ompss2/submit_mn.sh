@@ -4,7 +4,20 @@
 
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=48
+#SBATCH --signal=B:USR1@10
 
+# Some general utils for when kulled by time.
+init=${SECONDS}
+job_finish_hook()
+{
+	finalize=${SECONDS}
+	echo "# Killing: $(date)"
+	echo "# Elapsed: $((finalize-init))"
+	echo "# ======================================"
+}
+trap 'job_finish_hook' USR1
+
+# command line arguments.
 source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a R -l repeats -h "Repetitions per program default[1]" -t int
@@ -59,3 +72,10 @@ for dim in ${dims[@]}; do
 		fi
 	done
 done
+
+# We arrive here only when not wall time was reached.
+# else the function job_finish_hook is called.
+finalize=${SECONDS}
+echo "# Done:  $(date)"
+echo "# Elapsed: $((finalize-init))"
+echo "# ======================================"
