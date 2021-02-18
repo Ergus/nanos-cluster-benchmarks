@@ -69,7 +69,7 @@ void matvec_tasks(const double *A, const double *B, double *C,
 
 		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])		\
 			weakin(B[0; dim * colsBC])								\
-			weakout(C[i; rowsPerNode * colsBC]) node(nodeid) label("weakmatvec")
+			weakout(C[i; rowsPerNode * colsBC]) node(nodeid) wait label("weakmatvec")
 		{
 			if (THECOND) {
 				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
