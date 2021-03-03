@@ -33,7 +33,7 @@ void matvec_tasks(const double *A, const double *B, double *C,
 		#pragma oss task in(A[i * dim; dim * ts]) \
 			in(B[0; dim * colsBC]) \
 			out(C[i * colsBC; ts * colsBC]) label("weakmatvec")
-		matmul_base(&A[i * dim], C, &C[i], ts, dim, colsBC);
+		matmul_base(&A[i * dim], B, &C[i], ts, dim, colsBC);
 	}
 }
 
