@@ -24,15 +24,17 @@ foreach (FETCHTASK 0;1;2)
   set(executable "jacobi_${FETCHSUFIX}")
   message("Add benchmark: ${executable}")
   add_executable(${executable} jacobi.c)
-  target_compile_definitions(${executable} PUBLIC -DFETCHTASK=${FETCHTASK})
+  target_compile_definitions(${executable}
+    PUBLIC -DFETCHTASK=${FETCHTASK})
   target_link_libraries(${executable} argparser)
 
 endforeach ()
 
 # install (copy) scripts
-configure_file(submit_mn.sh submit_mn.sh @ONLY)
-configure_file(submiter_mn.sh submiter_mn.sh @ONLY)
-configure_file(extrae_template.xml extrae.xml @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
 
-configure_file(process.py process.py COPYONLY)
-configure_file(create_paraver_trace.py create_paraver_trace.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/process.py" process.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_trace.py COPYONLY)
