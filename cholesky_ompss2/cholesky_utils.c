@@ -153,7 +153,6 @@ void write_matrix_flat(const char filename[64], size_t ld, double matrix[ld][ld]
 	}
 }
 
-//! Write the blocked matrix reshaping, I'll keep it binary to allow parallel writing later
 void write_matrix_block(const char filename[64],
                         const size_t nblocks, const size_t bsize,
                         double matrix[nblocks][nblocks][bsize][bsize]

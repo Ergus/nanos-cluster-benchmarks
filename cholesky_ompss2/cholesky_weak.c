@@ -55,72 +55,73 @@ int main(int argc, char **argv)
 {
 	init_args(argc, argv);
 
-	const int dim = create_cl_int ("Dimension");
-	const int bsize = create_cl_int ("Block_size");
-	const int check = create_optional_cl_int ("Check", 0);
+	const int DIM = create_cl_int ("Dimension");
+	const int BSIZE = create_cl_int ("Block_size");
+	const int CHECK = create_optional_cl_int ("Check", 0);
 
-	myassert(dim >= bsize);
-	modcheck(dim, bsize);
+	myassert(DIM >= BSIZE);
+	modcheck(DIM, BSIZE);
 
 	//========= End Command Line ===============
 
-	const size_t nblocks = dim / bsize;          // Number of blocks
-	const size_t dim2 = dim * dim * sizeof(double);
+	const size_t nblocks = DIM / BSIZE;          // Number of blocks
+	const size_t dim2 = DIM * DIM * sizeof(double);
 	printf("# Initializing data\n");
 	timer ttimer = create_timer("Total time");
 
 	//======= Allocate matrices ===============
-	double (*matrix)[nblocks][bsize][bsize] = NULL;
+	double (*matrix)[nblocks][BSIZE][BSIZE] = NULL;
 	matrix = nanos6_dmalloc(dim2, nanos6_equpart_distribution, 0, NULL);
 	assert(matrix);
 
-	init_matrix(nblocks, bsize, matrix);
+	init_matrix(nblocks, BSIZE, matrix);
 
-	double (*original)[dim] = NULL;
-	double (*factorized)[dim] = NULL;
+	double (*original)[DIM] = NULL;
+	double (*factorized)[DIM] = NULL;
 
 	//========= Init matrix ===================
 	#pragma oss taskwait
 
-	if (check) {
+	if (CHECK) {
 		original = nanos6_dmalloc(dim2, nanos6_equpart_distribution, 0, NULL);
 		assert(original);
 
 		factorized = nanos6_dmalloc(dim2, nanos6_equpart_distribution, 0, NULL);
 		assert(factorized);
 
-		task_blocked2flat(nblocks, bsize, dim, matrix, original);
+		task_blocked2flat(nblocks, BSIZE, DIM, matrix, original);
 
-		write_matrix_block("orig_block.txt", nblocks, bsize, matrix);
-		write_matrix_flat("orig_flat.txt", dim, original);
+		write_matrix_block("orig_block.txt", nblocks, BSIZE, matrix);
+		write_matrix_flat("orig_flat.txt", DIM, original);
 	}
 
-	// Algorithm
-	printf("# Executing the factorization...\n");
+	// ===========================================
+	printf("# Starting algorithm in process\n");
 	timer atimer = create_timer("Algorithm time");
 
-	cholesky(nblocks, bsize, matrix);
+	cholesky(nblocks, BSIZE, matrix);
 	#pragma oss taskwait
 
 	stop_timer(&atimer);
+	// ===========================================
 
-	const double performance = dim * dim * dim * 3000.0 / getNS_timer(&atimer);
+	const double performance = DIM * DIM * DIM * 3000.0 / getNS_timer(&atimer);
 
 	create_reportable_double("performance", performance);
 
 	//======== Check if set =====================
-	if (check) {
+	if (CHECK) {
 		// Allocate new matrix to transform it from tiled to flat
 		// Transform from tile (matrix) to flat (factorized_matrix)
-		task_blocked2flat(nblocks, bsize, dim, matrix, factorized);
+		task_blocked2flat(nblocks, BSIZE, DIM, matrix, factorized);
 
 		printf("# Writting factorized\n");
-		write_matrix_block("fact_block.txt", nblocks, bsize, matrix);
-		write_matrix_flat("fact_flat.txt", dim, factorized);
+		write_matrix_block("fact_block.txt", nblocks, BSIZE, matrix);
+		write_matrix_flat("fact_flat.txt", DIM, factorized);
 
 		printf("# Checking the correctness of the factorization...\n");
 		const double EPS = BLAS_dfpinfo(blas_eps);
-		check_factorization(dim, original, factorized, dim, EPS);
+		check_factorization(DIM, original, factorized, DIM, EPS);
 
 		#pragma oss taskwait
 		nanos6_dfree(factorized, dim2);
