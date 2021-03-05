@@ -22,29 +22,54 @@
 
 //! Initialize the blocked matrix
 
-void cholesky(const size_t nblocks, const size_t bsize,
+void cholesky(const size_t nblocks,
+              const size_t bsize,
               double A[nblocks][nblocks][bsize][bsize]
 ) {
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+	myassert(nblocks >= numNodes);
+	modcheck(nblocks, numNodes);
+
+	const size_t blocks_per_node = nblocks / numNodes;
+
 	for (size_t i = 0; i < nblocks; ++i) {
-		oss_potrf(bsize, A[i][i]);    // Diagonal Block Factorization
+		int nodei = i / blocks_per_node;
+
+		#pragma oss task weakinout(A[i][i][0;bsize][0;bsize])	\
+			node(nodei) label("weak_potrf")
+		{
+			oss_potrf(bsize, A[i][i]);    // Diagonal Block Factorization
+		}
 
 		#pragma oss task weakin(A[i][i][0;bsize][0;bsize])		\
-			weakinout(A[i][i+1:nblocks-1][0;bsize][0;bsize])
+			weakinout(A[i][i+1:nblocks-1][0;bsize][0;bsize])	\
+			node(nodei) label("weak_trsm")
 		{
 			for (size_t j = i + 1; j < nblocks; ++j)      // Triangular Systems
 				oss_trsm(bsize, A[i][i], A[i][j]);
 		}
 
-		#pragma oss task weakin(A[i][i+1:nblocks-1][0;bsize][0;bsize])	\
-			weakinout(A[i+1:nblocks-1][i+1:nblocks-1][0;bsize][0;bsize])
-		{
-			for (size_t j = i + 1; j < nblocks; ++j) {    // Update Trailing Matrix
+		for (size_t j = i + 1; j < nblocks; ++j) {    // Update Trailing Matrix
+			int nodej = j / blocks_per_node;
+
+			#pragma oss task weakin(A[i][j][0;bsize][0;bsize])		\
+				weakout(A[j][j][0;bsize][0;bsize])					\
+				node(nodej) label("weak_syrk")
+			{
 				oss_syrk(bsize, A[i][j], A[j][j]);
-				#pragma oss task weakin(A[i][i+1:j][0;bsize][0;bsize])	\
-					weakinout(A[i+1:j-1][i+1:nblocks-1][0;bsize][0;bsize])
-				{
-					for (size_t k = i + 1; k < j; ++k)
-						oss_gemm(bsize, A[i][j], A[i][k], A[k][j]);
+			}
+
+			#pragma oss task weakin(A[i][i+1:j][0;bsize][0;bsize])		\
+				weakinout(A[i+1:j-1][i+1:nblocks-1][0;bsize][0;bsize])	\
+				node(nodei) label("weak_gemm")
+			{
+				for (size_t k = i + 1; k < j; ++k) {
+					int nodek = k / blocks_per_node;
+					#pragma oss task weakin(A[i][j][0;bsize][0;bsize])	\
+						weakin(A[i][k][0;bsize][0;bsize])				\
+						weakout(A[k][j][0;bsize][0;bsize])				\
+						node(nodek) label("weak_gemm")
+					oss_gemm(bsize, A[i][j], A[i][k], A[k][j]);
 				}
 			}
 		}
@@ -55,9 +80,9 @@ int main(int argc, char **argv)
 {
 	init_args(argc, argv);
 
-	const int DIM = create_cl_int ("Dimension");
-	const int BSIZE = create_cl_int ("Block_size");
-	const int CHECK = create_optional_cl_int ("Check", 0);
+	const int DIM = create_cl_int("Dimension");
+	const int BSIZE = create_cl_int("Block_size");
+	const int CHECK = create_optional_cl_int("Check", 0);
 
 	myassert(DIM >= BSIZE);
 	modcheck(DIM, BSIZE);

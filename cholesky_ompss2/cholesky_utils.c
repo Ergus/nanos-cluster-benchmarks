@@ -22,7 +22,8 @@
 
 void oss_potrf(const size_t bsize, double A[bsize][bsize])
 {
-	#pragma oss task inout(A[0;bsize][0;bsize]) label("potrf")
+	#pragma oss task inout(A[0;bsize][0;bsize])			\
+		node(nanos6_cluster_no_offload) label("potrf")
 	{
 		int error = LAPACKE_dpotrf(
 			LAPACK_COL_MAJOR,
@@ -38,7 +39,9 @@ void oss_potrf(const size_t bsize, double A[bsize][bsize])
 
 void oss_trsm(const size_t bsize, double A[bsize][bsize], double B[bsize][bsize])
 {
-	#pragma oss task in(A[0;bsize][0;bsize]) inout(B[0;bsize][0;bsize]) label("trsm")
+	#pragma oss task in(A[0;bsize][0;bsize])			\
+		inout(B[0;bsize][0;bsize])						\
+		node(nanos6_cluster_no_offload) label("trsm")
 	cblas_dtrsm(
 		CblasColMajor,
 		CblasRight,
@@ -53,7 +56,9 @@ void oss_trsm(const size_t bsize, double A[bsize][bsize], double B[bsize][bsize]
 
 void oss_syrk(const size_t bsize, double A[bsize][bsize], double B[bsize][bsize])
 {
-	#pragma oss task in(A[0;bsize][0;bsize]) inout(B[0;bsize][0;bsize]) label("syrk")
+	#pragma oss task in(A[0;bsize][0;bsize])			\
+		inout(B[0;bsize][0;bsize])						\
+		node(nanos6_cluster_no_offload) label("syrk")
 	cblas_dsyrk(
 		CblasColMajor,
 		CblasLower,
@@ -70,8 +75,10 @@ void oss_gemm(const size_t bsize,
               double B[bsize][bsize],
               double C[bsize][bsize]
 ) {
-	#pragma oss task in(A[0;bsize][0;bsize]) in(B[0;bsize][0;bsize])	\
-		inout(C[0;bsize][0;bsize]) label("gemm")
+	#pragma oss task in(A[0;bsize][0;bsize])			\
+		in(B[0;bsize][0;bsize])							\
+		inout(C[0;bsize][0;bsize])						\
+		node(nanos6_cluster_no_offload) label("gemm")
 	cblas_dgemm(
 		CblasColMajor,
 		CblasNoTrans,
