@@ -26,7 +26,7 @@ extern "C" {
 
 #include "cmacros/macros.h"
 
-	double *alloc_init(const size_t rows, size_t cols, size_t ts)
+	double *alloc_init(const size_t rows, size_t cols, size_t ts, bool init)
 	{
 		const size_t numNodes = nanos6_get_num_cluster_nodes();
 		myassert(rows >= ts);
@@ -39,39 +39,40 @@ extern "C" {
 			                          nanos6_equpart_distribution, 0, NULL);
 		myassert(ret != NULL);
 
-		const size_t rowsPerNode = rows / numNodes;
-		const size_t piece = cols * ts;
+		if (init) { // Initialize to random??
 
-		for (size_t i = 0; i < rows; i += rowsPerNode) { // loop nodes
+			const size_t rowsPerNode = rows / numNodes;
 
-			int nodeid = i / rowsPerNode;
+			for (size_t i = 0; i < rows; i += rowsPerNode) { // loop nodes
 
-			#pragma oss task weakout(ret[i * cols; rowsPerNode * cols]) \
-				node(nodeid) label("initalize_weak")
-			{
-				for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
+				int nodeid = i / rowsPerNode;
 
-					#pragma oss task out(ret[j * cols; ts * cols]) \
-						node(nanos6_cluster_no_offload) label("initalize_slice")
-					{
-						struct drand48_data drand_buf;
-						srand48_r(j, &drand_buf);
-						double x;
+				#pragma oss task weakout(ret[i * cols; rowsPerNode * cols]) \
+					node(nodeid) label("initalize_weak")
+				{
+					for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
 
-						const size_t elems = ts * cols;
+						#pragma oss task out(ret[j * cols; ts * cols]) \
+							node(nanos6_cluster_no_offload) label("initalize_slice")
+						{
+							struct drand48_data drand_buf;
+							srand48_r(j, &drand_buf);
+							double x;
 
-						for (size_t k = 0; k < elems; ++k) {
-							drand48_r(&drand_buf, &x);
-							ret[j * cols + k] = x;
+							const size_t elems = ts * cols;
+
+							for (size_t k = 0; k < elems; ++k) {
+								drand48_r(&drand_buf, &x);
+								ret[j * cols + k] = x;
+							}
 						}
 					}
 				}
 			}
-		}
 
+		}
 		return ret;
 	}
-
 
 	void free_matrix(double *mat, size_t size)
 	{

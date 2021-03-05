@@ -151,9 +151,9 @@ int main(int argc, char* argv[])
 
 	const size_t colsBC = (ISMATVEC == 1 ? 1 : ROWS);
 
-	double *A = alloc_init(ROWS, ROWS, TS);      // this initialized by blocks ts x rows
-	double *B = alloc_init(ROWS, colsBC, TS);    // this splits the array in ts
-	double *C = alloc_init(ROWS, colsBC, ROWS);  // This one initializes all the arrays
+	double *A = alloc_init(ROWS, ROWS, TS, true);      // this initialized by blocks ts x rows
+	double *B = alloc_init(ROWS, colsBC, TS, true);    // this splits the array in ts
+	double *C = alloc_init(ROWS, colsBC, TS, false);
 	#pragma oss taskwait
 
 	printf("# Starting algorithm\n");
