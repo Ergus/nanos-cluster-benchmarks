@@ -29,7 +29,8 @@ extern "C" {
 	double *alloc_init(const size_t rows, size_t cols, size_t ts, bool init)
 	{
 		const size_t numNodes = nanos6_get_num_cluster_nodes();
-		myassert(rows >= ts);
+		myassert(rows >= ts);              // at least 1 portion per task
+		myassert(rows / ts >= numNodes);   // at least 1 task / node.
 		modcheck(rows, ts);
 
 		const size_t size = cols * rows;
