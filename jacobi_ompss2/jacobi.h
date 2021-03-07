@@ -30,6 +30,7 @@ extern "C" {
 	{
 		const size_t numNodes = nanos6_get_num_cluster_nodes();
 		myassert(dim >= ts);
+		myassert(dim / ts >= numNodes)
 		modcheck(dim, ts);
 
 		const size_t rowsPerNode = dim / numNodes;

@@ -53,7 +53,7 @@ void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
 			weakin(xin[0; dim])											\
 			weakin(B[i; rowsPerNode])									\
 			weakout(xout[i; rowsPerNode])								\
-			node(nodeid) wait label("weakmatvec")
+			node(nodeid) label("weakmatvec")
 		{
 			if (THECOND) {
 				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
