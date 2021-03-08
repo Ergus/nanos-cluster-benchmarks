@@ -28,18 +28,35 @@ re_next = re.compile('# -+')            # Divisor like # ---------
 re_report = re.compile('# =+')          # Divisor like # =========
 re_value = re.compile('((\w+)|performance$ time)$')
 
-results = {}
+results = []
 
 def process_group(a_dict):
     """Process group of executions with same parameters."""
+
+    copydic = {}
     for key in a_dict:
         if isinstance(a_dict[key], list):
-            m = mean(a_dict[key])
-            s = stdev(a_dict[key])
-            a_dict[key] = (m, s)
+            if "executions" in copydic:
+                assert copydic["executions"] == len(a_dict[key])
+            else:
+                count = len(a_dict[key])
+                assert count > 0
+                copydic["executions"] = count
 
-    print(json.dumps(a_dict))
+            if count == 1:  # single element.
+                m = a_dict[key][0]
+                s = 0;
+            else:           # Use mean and stdev when multiple elements
+                m = mean(a_dict[key])
+                s = stdev(a_dict[key])
 
+            copydic[key] = m
+            copydic[key+" stdev"] = s
+
+        else:
+            copydic[key] = a_dict[key]
+
+    results.append(copydic)
 
 def process_file(input_file):
     """Process the files and print the data in json format."""
@@ -101,5 +118,5 @@ if __name__ == "__main__":
         except IOError:
             print("File not accessible")
     else:
-        print ("Needs an input file")
+        print(json.dumps(results))
 
