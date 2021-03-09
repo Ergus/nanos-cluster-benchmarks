@@ -118,5 +118,5 @@ if __name__ == "__main__":
         except IOError:
             print("File not accessible")
     else:
-        print(json.dumps(results))
+        print(json.dumps(results, indent=1))
 
