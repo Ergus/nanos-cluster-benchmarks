@@ -26,8 +26,8 @@ add_argument -a N -l namespace -h "Namespace propagation enabled" -t int
 parse_args "$@"
 printargs >&2
 
-dims=(16384 32768)
-blocksizes=(64 128 256 512)
+dims=(16384 32768 65536)
+blocksizes=(8 16 32 64 128 256 512)
 
 REPEATS=${ARGS[R]}
 
