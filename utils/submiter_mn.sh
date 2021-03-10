@@ -24,7 +24,7 @@ add_argument -a N -l namespace -h "Namespace propagation enabled" -t int -d 1
 add_argument -a W -l weak -h "Namespace propagation enabled" -t int -d 0
 
 parse_args "$@"
-printargs
+printargs "# "
 
 now=$(date +%F_%H-%M-%S)
 name=$(basename ${ARGS[x]})

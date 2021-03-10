@@ -25,7 +25,6 @@ add_argument -a N -l namespace -h "Namespace propagation enabled" -t int
 add_argument -a W -l weak -h "Namespace propagation enabled" -t int
 
 parse_args "$@"
-printargs >&2
 
 dims=(16384 32768 65536)
 blocksizes=(8 16 32 64 128 256 512)
@@ -45,13 +44,15 @@ fi
 # Enable/disable weak scaling (parameter -W)
 [ ${ARGS[W]} = 1 ] && reps=$(( SLURM_JOB_NUM_NODES * 5 )) || reps=5
 
-
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
 echo "# Nodes: ${SLURM_JOB_NUM_NODES} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
 echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
 echo "# QOS: ${SLURM_JOB_QOS}"
 echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
+
+# Print command line arguments
+printargs "# "
 
 echo "# Repetitions: ${REPEATS}"
 env | grep NANOS6 | sed -e 's/^#*/# /'
