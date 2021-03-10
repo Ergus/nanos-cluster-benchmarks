@@ -20,6 +20,7 @@ import sys
 import os
 import json
 import pandas as pd
+import numpy as np
 
 data = {}
 
@@ -41,12 +42,15 @@ def load_file(input_file):
 
     return filename
 
-def process_time_tasksize(key, column):
+def process_tasksize(key, column):
     """Create graphs time vs tasksize"""
     dt = data[key]
-    row_vals = dt['Rows'].drop_duplicates()
+    row_vals = dt['Rows'].drop_duplicates()   # number of rows tests.
 
     for rows in row_vals:
+        dt_rows = dt[dt['Rows'] == rows]
+        tasksize_vals = dt_rows['Tasksize'].drop_duplicates()
+
         fig = plt.figure()
         gs = fig.add_gridspec(2, hspace=0)
         (ax1, ax2) = gs.subplots(sharex=True, sharey=False)
@@ -59,9 +63,6 @@ def process_time_tasksize(key, column):
         ax2.set_xlabel('Nodes')
         ax2.set_ylabel("Scalability "+column)
         ax2.grid(color='b', ls = '-.', lw = 0.25)
-
-        dt_rows = dt[dt['Rows'] == rows]
-        tasksize_vals = dt_rows['Tasksize'].drop_duplicates()
 
         # Time
         for ts in tasksize_vals:
@@ -91,13 +92,56 @@ def process_time_tasksize(key, column):
         plt.close()
         print("Generated: ", filename)
 
+def process_bars_tasksize(key):
+    """Create graphs time vs tasksize"""
+    dt = data[key]
+    ts_vals = dt['Tasksize'].drop_duplicates()   # number of rows tests.
+
+    for ts in ts_vals:
+        dt_ts = dt[dt['Tasksize'] == ts]   # rows with tasksize == ts
+
+        row_vals = dt_ts['Rows'].drop_duplicates()
+
+        # Figure
+        fig, ax = plt.subplots()
+
+        fig.suptitle("Tasksize " + str(ts))
+
+        ax.set_xlabel('Nodes')
+        ax.set_ylabel('Time')
+        ax.grid(axis = 'y', color = 'b', ls = '-.', lw = 0.25)
+
+        nbars = len(row_vals)
+        width = 1.0 / (nbars + 1)
+        offset = - width * nbars / 4 # /2 center /2 half
+
+        for rows in row_vals:
+            dt_rows = dt_ts[dt_ts['Rows'] == rows]
+
+            x = np.arange(dt_rows['worldsize'].size)
+
+            ax.bar(x + offset, dt_rows["Total time"], color = 'b',  width = width)
+            ax.bar(x + offset, dt_rows["Algorithm time"], color = 'r', width = width)
+            offset = offset + width
+
+        x = dt_ts[dt_ts['Rows'] == rows]['worldsize']
+        ax.set_xticks(np.arange(x.size))
+        ax.set_xticklabels([str(i) for i in x])
+
+        filename = "Bars_"+key+"_"+str(ts)+".png"
+        plt.savefig(filename)
+        plt.close()
+        print("Generated: ", filename)
+
+
 if __name__ == "__main__":
     for fname in sys.argv[1:]:
         try:
             with open(fname, 'r') as f:
                 key = load_file(f)
-                process_time_tasksize(key, "Algorithm time")
-                process_time_tasksize(key, "Total time")
+                process_tasksize(key, "Algorithm time")
+                process_tasksize(key, "Total time")
+                process_bars_tasksize(key)
 
         except IOError:
             print("File not accessible")
