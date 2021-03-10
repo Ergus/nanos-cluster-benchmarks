@@ -20,14 +20,16 @@ add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a w -l wtime -h "Wall time limit for jobs" -t timer -d 06:00:00
 add_argument -a q -l queue -h "queue" -t enum -e "debug bsc_cs xlarge" -d "bsc_cs"
 add_argument -a R -l repeats -h "Repetitions per program default[5]" -t int -d 5
-add_argument -a N -l namespace -h "Namespace propagation enabled" -t int -d 5
+add_argument -a N -l namespace -h "Namespace propagation enabled" -t int -d 1
+add_argument -a W -l weak -h "Namespace propagation enabled" -t int -d 0
 
 parse_args "$@"
 printargs
 
 now=$(date +%F_%H-%M-%S)
 name=$(basename ${ARGS[x]})
-resdir="results/${name}_${ARGS[N]}_${now}"
+[ ${ARGS[W]} = 1 ] && scale="weak" || scale="strong" # Change also on submit.
+resdir="results/${name}_${ARGS[N]}_${scale}"
 
 mkdir -p ${resdir}
 
@@ -48,5 +50,5 @@ for node in ${nodes[@]}; do
  		   --job-name=${jobname} \
  		   --output="${resdir}/%x_%j.out" \
  		   --error="${resdir}/%x_%j.err" \
- 		   ./submit_mn.sh -R ${ARGS[R]} -x ${ARGS[x]} -N ${ARGS[N]}
+ 		   ./submit_mn.sh -R ${ARGS[R]} -x ${ARGS[x]} -N ${ARGS[N]} -W ${ARGS[W]}
 done

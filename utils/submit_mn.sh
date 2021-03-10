@@ -22,6 +22,7 @@ source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a R -l repeats -h "Repetitions per program default[1]" -t int
 add_argument -a N -l namespace -h "Namespace propagation enabled" -t int
+add_argument -a W -l weak -h "Namespace propagation enabled" -t int
 
 parse_args "$@"
 printargs >&2
@@ -34,11 +35,16 @@ REPEATS=${ARGS[R]}
 # special nanos variables needed to set.
 export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
 
+# Enable/disable namepase (parameter -N)
 if [ ${ARGS[N]} = 1 ]; then
 	export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=false"
 else
 	export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=true"
 fi
+
+# Enable/disable weak scaling (parameter -W)
+[ ${ARGS[W]} = 1 ] && reps=$(( SLURM_JOB_NUM_NODES * 5 )) || reps=5
+
 
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
@@ -54,7 +60,7 @@ echo "# ======================================"
 for dim in ${dims[@]}; do
 	for bs in ${blocksizes[@]}; do
 		if [ $((SLURM_JOB_NUM_NODES*bs<=dim)) = 1 ]; then
-			COMMAND="${ARGS[x]} $dim $bs 5"
+			COMMAND="${ARGS[x]} $dim $bs $reps"
 			echo -e "# Starting command: ${COMMAND}"
 			echo "# ======================================"
 			for ((it=0; it<${REPEATS}; ++it)) {
