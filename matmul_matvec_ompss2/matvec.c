@@ -26,13 +26,18 @@
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it)
 {
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+	const size_t rowsPerNode = dim / numNodes;
 	myassert(ts <= dim);
 	modcheck(dim, ts);
 
 	for (size_t i = 0; i < dim; i += ts) {
-		#pragma oss task in(A[i * dim; dim * ts]) \
-			in(B[0; dim * colsBC]) \
-			out(C[i * colsBC; ts * colsBC]) label("weakmatvec")
+		int nodeid = i / rowsPerNode;
+
+		#pragma oss task in(A[i * dim; ts * dim]) \
+			in(B[0; colsBC * dim]) \
+			out(C[i * colsBC; ts * colsBC]) \
+			node(nodeid) label("strongmatvec")
 		matmul_base(&A[i * dim], B, &C[i], ts, dim, colsBC);
 	}
 }
