@@ -14,13 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Add the executables and link
-add_executable(matvec_strong matvec.c)
+add_executable(matvec_strong matmul_ompss2.c)
 target_compile_definitions(matvec_strong
   PUBLIC -DISSTRONG
   PUBLIC -DISMATVEC=1)
 target_link_libraries (matvec_strong argparser)
 
-add_executable(matmul_strong matvec.c)
+add_executable(matmul_strong matmul_ompss2.c)
 target_compile_definitions(matmul_strong
   PUBLIC -DISSTRONG
   PUBLIC -DISMATVEC=0)
@@ -42,7 +42,7 @@ foreach (ISMATVEC 0;1)
 
       set(executable "${TEST}_weak_${FETCHSUFIX}_${NODESUFIX}")
       message("Add benchmark: ${executable}")
-      add_executable(${executable} matvec.c)
+      add_executable(${executable} matmul_ompss2.c)
       target_compile_definitions(${executable}
 	PUBLIC -DFETCHTASK=${FETCHTASK}
 	PUBLIC -DWITH_NODE=${WITH_NODE}

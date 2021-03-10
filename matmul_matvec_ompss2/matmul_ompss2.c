@@ -19,7 +19,7 @@
 
 #include "ArgParserC/argparser.h"
 
-#include "matvec.h"
+#include "matmul_ompss2.h"
 
 #if ISSTRONG == 1
 
