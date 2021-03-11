@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=48
 #SBATCH --signal=B:USR1@10
 
-# Some general utils for when kulled by time.
+# Some general utils for when killed by time.
 init=${SECONDS}
 job_finish_hook()
 {
@@ -17,19 +17,21 @@ job_finish_hook()
 }
 trap 'job_finish_hook' USR1
 
-# command line arguments.
+# Declare command line arguments.
 source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
-add_argument -a R -l repeats -h "Repetitions per program default[1]" -t int
+add_argument -a R -l repeats -h "Repetitions per program" -t int
 add_argument -a N -l namespace -h "Namespace propagation enabled" -t int
-add_argument -a W -l weak -h "Namespace propagation enabled" -t int
+add_argument -a I -l iterations -h "Program interations" -t int
 
+# Parse input command line arguments
 parse_args "$@"
 
 dims=(16384 32768 65536)
 blocksizes=(8 16 32 64 128 256 512)
 
 REPEATS=${ARGS[R]}
+ITS=${ARGS[I]}
 
 # special nanos variables needed to set.
 export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
@@ -41,9 +43,6 @@ else
 	export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=true"
 fi
 
-# Enable/disable weak scaling (parameter -W)
-[ ${ARGS[W]} = 1 ] && reps=$(( SLURM_JOB_NUM_NODES * 5 )) || reps=5
-
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
 echo "# Nodes: ${SLURM_JOB_NUM_NODES} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
@@ -54,14 +53,14 @@ echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Runni
 # Print command line arguments
 printargs "# "
 
-echo "# Repetitions: ${REPEATS}"
+# Print nanos6 environment variables
 env | grep NANOS6 | sed -e 's/^#*/# /'
 echo "# ======================================"
 
 for dim in ${dims[@]}; do
 	for bs in ${blocksizes[@]}; do
 		if [ $((SLURM_JOB_NUM_NODES*bs<=dim)) = 1 ]; then
-			COMMAND="${ARGS[x]} $dim $bs $reps"
+			COMMAND="${ARGS[x]} $dim $bs $ITS"
 			echo -e "# Starting command: ${COMMAND}"
 			echo "# ======================================"
 			for ((it=0; it<${REPEATS}; ++it)) {

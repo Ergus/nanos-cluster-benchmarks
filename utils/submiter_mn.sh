@@ -18,28 +18,26 @@
 source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a w -l wtime -h "Wall time limit for jobs" -t timer -d 06:00:00
-add_argument -a q -l queue -h "queue" -t enum -e "debug bsc_cs xlarge" -d "bsc_cs"
-add_argument -a R -l repeats -h "Repetitions per program default[5]" -t int -d 5
-add_argument -a N -l namespace -h "Namespace propagation enabled" -t int -d 1
-add_argument -a W -l weak -h "Namespace propagation enabled" -t int -d 0
+add_argument -a q -l queue -h "Cluster queue" -t enum -e "debug bsc_cs xlarge" -d "bsc_cs"
+add_argument -a R -l repeats -h "Program repetitions default[5]" -t int -d 5
+add_argument -a N -l namespace -h "Namespace propagation enabled default[1]" -t int -d 1
+add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 
 parse_args "$@"
 printargs "# "
 
 now=$(date +%F_%H-%M-%S)
 name=$(basename ${ARGS[x]})
-[ ${ARGS[W]} = 1 ] && scale="weak" || scale="strong" # Change also on submit.
-resdir="results/${name}_${ARGS[N]}_${scale}"
+resdir="results/${name}_${ARGS[N]}"
 
 mkdir -p ${resdir}
-
-echo "Output: ${resdir}"
+echo "# Output directory: ${resdir}"
 
 nodes=(1 2 4 8)
-echo "nodes: ${nodes[*]}"
+echo "# List num nodes: ${nodes[*]}"
 
 for node in ${nodes[@]}; do
-	echo "Submitting nodes: ${node}"
+	echo "# Submitting for ${node} node[s]"
 
 	jobname="${name}_${node}"
 	filename="${resdir}/${jobname}"
@@ -50,5 +48,5 @@ for node in ${nodes[@]}; do
  		   --job-name=${jobname} \
  		   --output="${resdir}/%x_%j.out" \
  		   --error="${resdir}/%x_%j.err" \
- 		   ./submit_mn.sh -R ${ARGS[R]} -x ${ARGS[x]} -N ${ARGS[N]} -W ${ARGS[W]}
+ 		   ./submit_mn.sh -R ${ARGS[R]} -x ${ARGS[x]} -N ${ARGS[N]} -I ${ARGS[I]}
 done
