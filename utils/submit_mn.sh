@@ -28,7 +28,7 @@ add_argument -a I -l iterations -h "Program interations" -t int
 parse_args "$@"
 
 dims=(16384 32768 65536)
-blocksizes=(8 16 32 64 128 256 512)
+blocksizes=(32 64 128)
 
 REPEATS=${ARGS[R]}
 ITS=${ARGS[I]}
@@ -49,6 +49,7 @@ echo "# Nodes: ${SLURM_JOB_NUM_NODES} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE} C
 echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
 echo "# QOS: ${SLURM_JOB_QOS}"
 echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
+echo "# Walltime: $(squeue -h -j $SLURM_JOBID -o "%l")"
 
 # Print command line arguments
 printargs "# "
