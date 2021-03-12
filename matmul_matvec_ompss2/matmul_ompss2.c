@@ -26,6 +26,9 @@
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it)
 {
+	if (it == 0)
+		printf("# matvec_tasks_strong\n");
+
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	const size_t rowsPerNode = dim / numNodes;
 	myassert(ts <= dim);
@@ -59,7 +62,9 @@ void matvec_tasks(const double *A, const double *B, double *C,
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it)
 {
-	printf("# matvec_tasks_node FETCHTASK %d\n", FETCHTASK);
+	if (it == 0)
+		printf("# matvec_tasks_node FETCHTASK %d\n", FETCHTASK);
+
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(ts <= dim);
 	modcheck(dim, ts);
@@ -101,7 +106,9 @@ void matvec_tasks(const double *A, const double *B, double *C,
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it)
 {
-	printf("# matvec_tasks_nonode FETCHTASK %d\n", FETCHTASK);
+	if (it == 0)
+		printf("# matvec_tasks_nonode FETCHTASK %d\n", FETCHTASK);
+
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(ts <= dim);
 	modcheck(dim, ts);
