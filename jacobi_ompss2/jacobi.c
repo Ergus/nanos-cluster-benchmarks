@@ -118,8 +118,11 @@ int main(int argc, char* argv[])
 	timer atimer = create_timer("Algorithm time");
 
 	for (int i = 0; i < ITS; ++i) {
-		jacobi_tasks(A, B, x1, x2, TS, ROWS, 2 * i);
-		jacobi_tasks(A, B, x2, x1, TS, ROWS, 2 * i + 1);
+		if (i % 2 == 0) {
+			jacobi_tasks(A, B, x1, x2, TS, ROWS, i);
+		} else {
+			jacobi_tasks(A, B, x2, x1, TS, ROWS, i);
+		}
 	}
 	#pragma oss taskwait
 
