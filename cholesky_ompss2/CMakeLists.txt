@@ -31,8 +31,8 @@ target_link_options(cholesky_weak PUBLIC ${BLAS_LINKER_FLAGS})
 target_link_libraries(cholesky_weak argparser ${BLAS_LIBRARIES})
 
 # # install (copy) scripts
-# configure_file(submit_mn.sh submit_mn.sh @ONLY)
-# configure_file(submiter_mn.sh submiter_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
 # configure_file(trace.sh trace.sh @ONLY)
 # configure_file(extrae_template.xml extrae.xml @ONLY)
 
