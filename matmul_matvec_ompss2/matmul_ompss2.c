@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 	const int PRINT = create_optional_cl_int ("Print", 0);
 
 	printf("# Initializing data\n");
-	timer ttimer = create_timer("Total time");
+	timer ttimer = create_timer("Total_time");
 
 	const size_t colsBC = (ISMATVEC == 1 ? 1 : ROWS);
 
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
 	#pragma oss taskwait
 
 	printf("# Starting algorithm\n");
-	timer atimer = create_timer("Algorithm time");
+	timer atimer = create_timer("Algorithm_time");
 
 	for (int i = 0; i < ITS; ++i)
 		matvec_tasks(A, B, C, TS, ROWS, colsBC, i);
@@ -200,11 +200,6 @@ int main(int argc, char* argv[])
 	create_reportable_int("worldsize", nanos6_get_num_cluster_nodes());
 	create_reportable_int("cpu_count", nanos6_get_num_cpus());
 	create_reportable_int("namespace_enabled", nanos6_get_namespace_is_enabled());
-
-	const double performance =
-		ITS * ROWS * ROWS * colsBC * 2000.0 / getNS_timer(&atimer);
-
-	create_reportable_double("performance", performance);
 
 	report_args();
 	free_args();

@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 	const size_t nblocks = DIM / BSIZE;          // Number of blocks
 	const size_t dim2 = DIM * DIM * sizeof(double);
 	printf("# Initializing data\n");
-	timer ttimer = create_timer("Total time");
+	timer ttimer = create_timer("Total_time");
 
 	//======= Allocate matrices ===============
 	double (*matrix)[nblocks][BSIZE][BSIZE] = NULL;
@@ -122,17 +122,12 @@ int main(int argc, char **argv)
 
 	// ===========================================
 	printf("# Starting algorithm in process\n");
-	timer atimer = create_timer("Algorithm time");
+	timer atimer = create_timer("Algorithm_time");
 
 	cholesky(nblocks, BSIZE, matrix);
 	#pragma oss taskwait
 
 	stop_timer(&atimer);
-	// ===========================================
-
-	const double performance = DIM * DIM * DIM * 3000.0 / getNS_timer(&atimer);
-
-	create_reportable_double("performance", performance);
 
 	//======== Check if set =====================
 	if (CHECK) {
