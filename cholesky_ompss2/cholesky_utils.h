@@ -39,9 +39,11 @@
 
 //############## Blas wrappers #####################
 
-void oss_potrf(const size_t bsize, double A[bsize][bsize]);
+void oss_potrf(const size_t bsize, double A[bsize][bsize], size_t i);
 
-void oss_trsm(const size_t bsize, double A[bsize][bsize], double B[bsize][bsize]);
+void oss_trsm(const size_t bsize,
+              double A[bsize][bsize],
+              double B[bsize][bsize]);
 
 void oss_syrk(const size_t bsize, double A[bsize][bsize], double B[bsize][bsize]);
 

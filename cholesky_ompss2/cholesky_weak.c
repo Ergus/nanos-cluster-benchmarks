@@ -38,7 +38,7 @@ void cholesky(const size_t nblocks,
 		#pragma oss task weakinout(A[i][i][0;bsize][0;bsize])	\
 			node(nodei) label("weak_potrf")
 		{
-			oss_potrf(bsize, A[i][i]);    // Diagonal Block Factorization
+			oss_potrf(bsize, A[i][i], i);    // Diagonal Block Factorization
 		}
 
 		#pragma oss task weakin(A[i][i][0;bsize][0;bsize])		\

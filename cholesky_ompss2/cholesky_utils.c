@@ -20,11 +20,13 @@
 
 //############## Blas wrappers #####################
 
-void oss_potrf(const size_t bsize, double A[bsize][bsize])
+void oss_potrf(const size_t bsize, double A[bsize][bsize], size_t i)
 {
 	#pragma oss task inout(A[0;bsize][0;bsize])			\
 		node(nanos6_cluster_no_offload) label("potrf")
 	{
+		printf("# Start it oss_potrf %zu\n", i);
+
 		int error = LAPACKE_dpotrf(
 			LAPACK_COL_MAJOR,
 			'L',
