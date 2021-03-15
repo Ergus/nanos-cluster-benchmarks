@@ -15,13 +15,15 @@
 
 # Add the executables and link
 
+set(TEST "jacobi")
+
 SET(FETCHLIST nofetch fetchall fetchfirst)
 foreach (FETCHTASK 0;1;2)
   list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
 
   SET(NODELIST nonode node)
 
-  set(executable "jacobi_${FETCHSUFIX}")
+  set(executable "${TEST}_${FETCHSUFIX}")
   message("Add benchmark: ${executable}")
   add_executable(${executable} jacobi.c)
   target_compile_definitions(${executable}
@@ -31,16 +33,19 @@ foreach (FETCHTASK 0;1;2)
 endforeach ()
 
 # install (copy) scripts
+# Submit
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
+
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
 
-configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_mn.sh @ONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_mn.sh @ONLY)
-
+#Extrae
 configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
-
-configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process.py COPYONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process.py COPYONLY)
-
 configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_trace.py COPYONLY)
+
+# Process
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process_mn.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process_dim.py COPYONLY)
+

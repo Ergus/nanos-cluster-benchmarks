@@ -26,21 +26,19 @@ add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 parse_args "$@"
 printargs "# "
 
-now=$(date +%F_%H-%M-%S)
 name=$(basename ${ARGS[x]})
 resdir="results/${name}_${ARGS[N]}"
 
 mkdir -p ${resdir}
 echo "# Output directory: ${resdir}"
 
-nodes=(1 2 4 8)
+nodes=(1 2 4 8 16)
 echo "# List num nodes: ${nodes[*]}"
 
 for node in ${nodes[@]}; do
 	echo "# Submitting for ${node} node[s]"
 
 	jobname="${name}_${node}"
-	filename="${resdir}/${jobname}"
 
  	sbatch --ntasks=${node} \
 		   --time=${ARGS[w]} \

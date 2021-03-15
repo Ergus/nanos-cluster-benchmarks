@@ -51,21 +51,25 @@ foreach (ISMATVEC 0;1)
 
     endforeach ()
   endforeach ()
+
+  configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
+  configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
+
 endforeach ()
 
 # install (copy) scripts
+configure_file(validate.py validate.py @ONLY)
+
+# Submit
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
 
-configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_dim.sh @ONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_dim.sh @ONLY)
-
+# Extrae
 configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
-
-configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process.py COPYONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process.py COPYONLY)
-
 configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_trace.py COPYONLY)
 
-configure_file(validate.py validate.py @ONLY)
+# Process
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process_mn.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process_dim.py COPYONLY)
+

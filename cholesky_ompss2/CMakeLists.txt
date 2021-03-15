@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+set(TEST cholesky)
 set(BLA_VENDOR Intel10_64ilp)
 find_package(BLAS REQUIRED)
 
@@ -24,19 +25,23 @@ find_path(
 # Add the executables and link
 include_directories(${MKL_INCLUDE_DIR})
 
-add_executable(cholesky_weak cholesky_weak.c cholesky_utils.c)
-
-target_link_options(cholesky_weak PUBLIC ${BLAS_LINKER_FLAGS})
-
-target_link_libraries(cholesky_weak argparser ${BLAS_LIBRARIES})
+add_executable(${TEST}_weak cholesky_weak.c cholesky_utils.c)
+target_link_options(${TEST}_weak PUBLIC ${BLAS_LINKER_FLAGS})
+target_link_libraries(${TEST}_weak argparser ${BLAS_LIBRARIES})
 
 # # install (copy) scripts
+# Submit
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
-# configure_file(trace.sh trace.sh @ONLY)
-# configure_file(extrae_template.xml extrae.xml @ONLY)
 
-# configure_file(process.py process.py COPYONLY)
-# configure_file(create_paraver_trace.py create_paraver_trace.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
 
-# configure_file(validate.py validate.py @ONLY)
+#Extrae
+configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_trace.py COPYONLY)
+
+#Process
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process_mn.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process_dim.py COPYONLY)

@@ -51,7 +51,7 @@ if [ $((SLURM_JOB_NUM_NODES*BS<=DIM)) != 1 ]; then
 	exit
 fi
 
-for exe in matvec_*_node matvec_omp_mpi; do
+for exe in @TEST@_*; do
 	for DISABLE_REMOTE in false true; do  # namespace enable/disable
 
 		export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=${DISABLE_REMOTE}"

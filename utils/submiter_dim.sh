@@ -44,7 +44,7 @@ echo "# List num nodes: ${nodes[*]}"
 for node in ${nodes[@]}; do
 	echo "# Submitting for ${node} node[s]"
 
-	jobname="${node}"
+	jobname="@TEST@_${node}"
 
  	sbatch --ntasks=${node} \
 		   --time=${ARGS[w]} \
@@ -52,5 +52,5 @@ for node in ${nodes[@]}; do
  		   --job-name=${jobname} \
  		   --output="${resdir}/%x_%j.out" \
  		   --error="${resdir}/%x_%j.err" \
- 		   ./submit_dim.sh -R ${ARGS[R]} -D ${ARGS[D]} -B ${ARGS[B]} -I ${ARGS[I]} -W ${ARGS[W]}
+ 		   ./submit_@TEST@_dim.sh -R ${ARGS[R]} -D ${ARGS[D]} -B ${ARGS[B]} -I ${ARGS[I]} -W ${ARGS[W]}
 done
