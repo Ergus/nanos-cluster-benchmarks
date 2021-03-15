@@ -33,8 +33,14 @@ endforeach ()
 # install (copy) scripts
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
+
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_mn.sh @ONLY)
+
 configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
 
-configure_file("${PROJECT_SOURCE_DIR}/utils/process.py" process.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process.py COPYONLY)
+
 configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_trace.py COPYONLY)

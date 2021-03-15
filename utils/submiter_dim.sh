@@ -32,8 +32,8 @@ add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 parse_args "$@"
 printargs "# "
 
-[ ${weakscaling} = 1 ] && suffix="weak" || suffix="strong"
-resdir="results/${ARGS[D]}_${ARGS[B]}_${suffix}"
+[ ${ARGS[W]} = 1 ] && suffix="weak" || suffix="strong"
+resdir="results/${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${suffix}"
 
 mkdir -p ${resdir}
 echo "# Output directory: ${resdir}"
@@ -45,7 +45,6 @@ for node in ${nodes[@]}; do
 	echo "# Submitting for ${node} node[s]"
 
 	jobname="${node}"
-	filename="${resdir}/${jobname}"
 
  	sbatch --ntasks=${node} \
 		   --time=${ARGS[w]} \
