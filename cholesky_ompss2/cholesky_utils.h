@@ -37,6 +37,8 @@
 #include "cmacros/macros.h"
 #include "mkl.h"
 
+#include <nanos6/debug.h>
+
 //############## Blas wrappers #####################
 
 void oss_potrf(const size_t bsize, double A[bsize][bsize], size_t i);
