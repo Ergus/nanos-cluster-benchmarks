@@ -33,7 +33,7 @@ parse_args "$@"
 printargs "# "
 
 [ ${ARGS[W]} = 1 ] && suffix="weak" || suffix="strong"
-resdir="results/${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${suffix}"
+resdir="results/@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${suffix}"
 
 mkdir -p ${resdir}
 echo "# Output directory: ${resdir}"

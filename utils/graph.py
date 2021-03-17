@@ -203,8 +203,7 @@ if __name__ == "__main__":
         try:
             with open(fname, 'r') as f:
                 key = load_file(f)
-                process_tasksize(key, "Algorithm time")
-                process_tasksize(key, "Total time")
+                process_tasksize(key, "Algorithm_time")
                 process_bars_tasksize(key)
 
         except IOError:

@@ -30,7 +30,7 @@ re_number = re.compile('(?P<number>\d+(?P<float>\.\d+(e\+\d+)?)?)') # KEY: numbe
 re_next = re.compile('# -+')            # Divisor like # ---------
 re_report = re.compile('# =+')          # Divisor like # =========
 
-results = []
+results = {}
 
 def process_group(a_dict):
     """Process group of executions with same parameters."""
@@ -49,8 +49,11 @@ def process_group(a_dict):
 
         # keys int and string
         if all(isinstance(i, (str, int)) for i in vals_list) :
-            assert all(i == vals_list[0] for i in vals_list)
-            copydic[key] = vals_list[0]
+            if all(i == vals_list[0] for i in vals_list):
+                copydic[key] = vals_list[0]
+            else:
+                print(vals_list)
+                sys.exit("Failed `all` instances!")
 
         else:  # Floats
             if count == 1: # single element.
@@ -65,10 +68,14 @@ def process_group(a_dict):
             copydic[key] = m
             copydic[key + "_stdev"] = s
 
-    results.append(copydic)
+    exe = copydic.pop("Executable")
+    assert exe
+    basename = os.path.basename(exe)
+    results.setdefault(basename, []).append(copydic)
 
 def process_file(input_file):
     """Process the files and print the data in json format."""
+
     line_dict = {}
     count = 0
 
@@ -81,21 +88,19 @@ def process_file(input_file):
         # Even the filename for latter check
         pair = re_pair.match(line)
         if pair:
-            key = match.groupdict()['key']
-            value = match.groupdict()['value']
+            key = pair.groupdict()['key']
+            value = pair.groupdict()['value']
 
-            number = re_pair.match(value)
+            number = re_number.match(value)
             if number:
                 if number.groupdict()['float']: # it is a float so will be averaged later
                     value = float(number.groupdict()['number'])
                 else:                           # it is a key so will be used as a key/info
-                    value = int(match.groupdict()['number'])
-
-            if key in line_dict:                # append or create
-                line_dict[key].append(fvalue)
+                    value = int(number.groupdict()['number'])
             else:
-                line_dict[key] = [fvalue]
-
+                value = value.strip('\"')
+            # Create or append
+            line_dict.setdefault(key, []).append(value)
             continue
 
         # -------------- repetition
@@ -116,14 +121,28 @@ def process_file(input_file):
 
 
 if __name__ == "__main__":
-    for fname in sys.argv[1:]:
-        try:
-            with open(fname) as f:
-                # basename = os.path.splitext(sys.argv[1])[0]
-                process_file(f)
+    for dirname in sys.argv[1:]:
+        if os.path.isdir(dirname):
+            print("Going into:", dirname)
+            results = {}
+            # Process input
+            for basename_in in os.listdir(dirname):
+                if basename_in.endswith(".out"):
+                    fname_in = os.path.join(dirname, basename_in)
+                    print("Processing:", fname_in)
+                    try:
+                        with open(fname_in) as fin:
+                            process_file(fin)
+                    except IOError:
+                        print("Couldn't read input:", fname_in)
 
-        except IOError:
-            print("File not accessible")
-    else:
-        print(json.dumps(results, indent=1))
+
+            # Write output
+            fname_out = dirname.rstrip(os.sep)+".json"
+            print("Writing:", fname_out)
+            try:
+                with open(fname_out, "w") as fout:
+                    json.dump(results, fout, indent=4)
+            except IOError:
+                print("Couldn't write output")
 
