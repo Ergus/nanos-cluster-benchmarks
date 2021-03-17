@@ -13,25 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Add the executables and link
-add_executable(matvec_strong matmul_ompss2.c)
-target_compile_definitions(matvec_strong
-  PUBLIC -DISSTRONG
-  PUBLIC -DISMATVEC=1)
-target_link_libraries (matvec_strong argparser)
-
-add_executable(matmul_strong matmul_ompss2.c)
-target_compile_definitions(matmul_strong
-  PUBLIC -DISSTRONG
-  PUBLIC -DISMATVEC=0)
-target_link_libraries (matmul_strong argparser)
-
-
 # The order is important
 SET(TESTLIST matmul matvec)
 foreach (ISMATVEC 0;1)
   list(GET TESTLIST ${ISMATVEC} TEST)
 
+  # Weak
   SET(FETCHLIST nofetch fetchall fetchfirst)
   foreach (FETCHTASK 0;1;2)
     list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
@@ -50,6 +37,20 @@ foreach (ISMATVEC 0;1)
       target_link_libraries(${executable} argparser)
 
     endforeach ()
+  endforeach ()
+
+  # Strong
+  SET(STRONGLIST ignore flat interleave nested)
+  foreach (STRONGTYPE 1;2;3)
+    list(GET STRONGLIST ${STRONGTYPE} STRONGSUFIX)
+
+    set(executable "${TEST}_strong_${STRONGSUFIX}")
+    message("Add benchmark: ${executable}")
+    add_executable(${executable} matmul_ompss2.c)
+    target_compile_definitions(${executable}
+      PUBLIC -DISSTRONG=${STRONGTYPE}
+      PUBLIC -DISMATVEC=${ISMATVEC})
+    target_link_libraries(${executable} argparser)
   endforeach ()
 
   configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)

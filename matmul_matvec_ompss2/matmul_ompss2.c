@@ -24,15 +24,15 @@
 #if ISSTRONG == 1
 
 void matvec_tasks(const double *A, const double *B, double *C,
-                  size_t ts, size_t dim, size_t colsBC, size_t it)
-{
+                  size_t ts, size_t dim, size_t colsBC, size_t it
+) {
 	if (it == 0)
-		printf("# matvec_tasks_strong\n");
+		printf("# matvec_strong_flat \n");
+	myassert(ts <= dim);
+	modcheck(dim, ts);
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	const size_t rowsPerNode = dim / numNodes;
-	myassert(ts <= dim);
-	modcheck(dim, ts);
 
 	for (size_t i = 0; i < dim; i += ts) {
 		int nodeid = i / rowsPerNode;
@@ -45,7 +45,66 @@ void matvec_tasks(const double *A, const double *B, double *C,
 	}
 }
 
-#else // ISSTRONG
+#elif ISSTRONG == 2
+
+void matvec_tasks(const double *A, const double *B, double *C,
+                  size_t ts, size_t dim, size_t colsBC, size_t it
+) {
+	if (it == 0)
+		printf("# matvec_strong_interleave\n");
+	myassert(ts <= dim);
+	modcheck(dim, ts);
+
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+
+	for (size_t i = 0; i < dim; i += ts) {
+		int nodeid = i % numNodes;
+
+		#pragma oss task in(A[i * dim; ts * dim]) \
+			in(B[0; colsBC * dim]) \
+			out(C[i * colsBC; ts * colsBC]) \
+			node(nodeid) label("strongmatvec")
+		matmul_base(&A[i * dim], B, &C[i], ts, dim, colsBC);
+	}
+}
+
+
+#elif ISSTRONG == 3
+
+void matvec_tasks(const double *A, const double *B, double *C,
+                  size_t ts, size_t dim, size_t colsBC, size_t it
+) {
+	if (it == 0)
+		printf("# matvec_strong_nested\n");
+	myassert(ts <= dim);
+	modcheck(dim, ts);
+
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+
+	const size_t rowsPerNode = dim / numNodes;
+	myassert(ts <= rowsPerNode);
+	modcheck(rowsPerNode, ts);
+
+	for (size_t i = 0; i < dim; i += rowsPerNode) {
+
+		int nodeid = i / rowsPerNode;
+
+		#pragma oss task in(A[i * dim; rowsPerNode * dim])				\
+			in(B[0; dim * colsBC])										\
+			out(C[i; rowsPerNode * colsBC]) node(nodeid) label("weakmatvec")
+		{
+			for (size_t j = i; j < i + rowsPerNode; j += ts) {
+				#pragma oss task in(A[j * dim; ts * dim])				\
+					in(B[0; dim * colsBC])								\
+					out(C[j; ts * colsBC])								\
+					node(nanos6_cluster_no_offload) label("strongmatvec")
+				matmul_base(&A[j * dim], B, &C[j], ts, dim, colsBC);
+			}
+		}
+	}
+}
+
+#else // ISSTRONG == 0
 
 #if FETCHTASK == 0
 #define THECOND 0
@@ -60,14 +119,15 @@ void matvec_tasks(const double *A, const double *B, double *C,
 #if WITH_NODE == 1
 
 void matvec_tasks(const double *A, const double *B, double *C,
-                  size_t ts, size_t dim, size_t colsBC, size_t it)
-{
+                  size_t ts, size_t dim, size_t colsBC, size_t it
+) {
 	if (it == 0)
-		printf("# matvec_tasks_node FETCHTASK %d\n", FETCHTASK);
-
-	const size_t numNodes = nanos6_get_num_cluster_nodes();
+		printf("# matvec_weak_node FETCHTASK %d\n", FETCHTASK);
 	myassert(ts <= dim);
 	modcheck(dim, ts);
+
+
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
 
 	const size_t rowsPerNode = dim / numNodes;
 	myassert(ts <= rowsPerNode);
@@ -104,10 +164,10 @@ void matvec_tasks(const double *A, const double *B, double *C,
 #else // WITH_NODE
 
 void matvec_tasks(const double *A, const double *B, double *C,
-                  size_t ts, size_t dim, size_t colsBC, size_t it)
-{
+                  size_t ts, size_t dim, size_t colsBC, size_t it
+) {
 	if (it == 0)
-		printf("# matvec_tasks_nonode FETCHTASK %d\n", FETCHTASK);
+		printf("# matvec_weak_nonode FETCHTASK %d\n", FETCHTASK);
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(ts <= dim);
