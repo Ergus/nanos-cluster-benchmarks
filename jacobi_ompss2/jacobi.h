@@ -32,6 +32,7 @@ extern "C" {
 		myassert(dim >= ts);
 		myassert(dim / ts >= numNodes)
 		modcheck(dim, ts);
+		modcheck(dim / numNodes, ts);
 
 		const size_t rowsPerNode = dim / numNodes;
 
