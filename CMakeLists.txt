@@ -22,6 +22,7 @@ find_package(MERCURIUM REQUIRED)
 project(nanos6_benchmarks)
 
 option(WITH_NAMESPACE "Build tests for namespace code" true)
+option(WITH_ASAN "Build tests with address sanitizer" false)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,6 +31,16 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 add_compile_options("--ompss-2")
 add_compile_definitions(_GNU_SOURCE)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
+
+# Enable address sanitizer
+if (WITH_ASAN)
+  message("Using ASAN")
+  add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
+
+  set (CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+endif ()
+
 
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
