@@ -35,8 +35,9 @@
 void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
                   size_t ts, size_t dim, size_t it
 ) {
+	if (it == 0)
+		printf("# matvec_tasks_node FETCHTASK %d\n", FETCHTASK);
 
-	printf("# matvec_tasks_node FETCHTASK %d\n", FETCHTASK);
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(ts <= dim);
 	modcheck(dim, ts);
@@ -53,7 +54,7 @@ void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
 			weakin(xin[0; dim])											\
 			weakin(B[i; rowsPerNode])									\
 			weakout(xout[i; rowsPerNode])								\
-			node(nodeid) label("weakmatvec")
+			node(nodeid) wait label("weakjacobi")
 		{
 			if (THECOND) {
 				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
@@ -70,7 +71,7 @@ void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
 					in(xin[0; dim])										\
 					in(B[j; ts])										\
 					out(xout[j; ts])									\
-					node(nanos6_cluster_no_offload) label("strongmatvec")
+					node(nanos6_cluster_no_offload) label("strongjacobi")
 				{
 					matmul_base(&A[j * dim], xin, &xout[j], ts, dim);
 					for (size_t l = j; l < j + ts; ++l) {
@@ -86,10 +87,12 @@ int main(int argc, char* argv[])
 {
 	init_args(argc, argv);
 
+	const char *PREFIX = basename(argv[0]);
 	const int ROWS = create_cl_int ("Rows");
 	const int TS = create_cl_int ("Tasksize");
 	const int ITS = create_optional_cl_int ("Iterations", 1);
 	const int PRINT = create_optional_cl_int ("Print", 0);
+	myassert(ITS > 0);
 
 	printf("# Initializing data\n");
 	timer ttimer = create_timer("Total_time");
@@ -117,12 +120,14 @@ int main(int argc, char* argv[])
 	printf("# Starting algorithm\n");
 	timer atimer = create_timer("Algorithm_time");
 
+	double *xin = NULL;
+	double *xout = NULL;
+
 	for (int i = 0; i < ITS; ++i) {
-		if (i % 2 == 0) {
-			jacobi_tasks(A, B, x1, x2, TS, ROWS, i);
-		} else {
-			jacobi_tasks(A, B, x2, x1, TS, ROWS, i);
-		}
+		xin = (i % 2 == 0) ? x1 : x2;
+		xout = (i % 2 == 0) ? x2 : x1;
+
+		jacobi_tasks(A, B, xin, xout, TS, ROWS, i);
 	}
 	#pragma oss taskwait
 
@@ -132,9 +137,9 @@ int main(int argc, char* argv[])
 	stop_timer(&ttimer);
 
 	if (PRINT) {
-		printmatrix_task(A, ROWS, ROWS, "jacobi");
-		printmatrix_task(B, ROWS, 1, "jacobi");
-		printmatrix_task(x1, ROWS, 1, "jacobi");
+		printmatrix_task(A, ROWS, ROWS, PREFIX);
+		printmatrix_task(B, ROWS, 1, PREFIX);
+		printmatrix_task(xout, ROWS, 1, PREFIX);
 		#pragma oss taskwait
 	}
 

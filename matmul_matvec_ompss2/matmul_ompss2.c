@@ -233,8 +233,9 @@ int main(int argc, char* argv[])
 	printf("# Starting algorithm\n");
 	timer atimer = create_timer("Algorithm_time");
 
-	for (int i = 0; i < ITS; ++i)
+	for (int i = 0; i < ITS; ++i) {
 		matvec_tasks(A, B, C, TS, ROWS, colsBC, i);
+	}
 	#pragma oss taskwait
 
 	stop_timer(&atimer);

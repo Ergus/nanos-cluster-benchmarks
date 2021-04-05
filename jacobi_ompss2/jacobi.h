@@ -38,7 +38,7 @@ extern "C" {
 
 		for (size_t i = 0; i < dim; i += rowsPerNode) { // loop nodes
 
-			int nodeid = i / rowsPerNode;
+			const int nodeid = i / rowsPerNode;
 
 			#pragma oss task weakout(A[i * dim; rowsPerNode * dim])	\
 				weakout(B[i; rowsPerNode])							\

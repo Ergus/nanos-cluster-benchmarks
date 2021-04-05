@@ -3,7 +3,7 @@
 export EXTRAE_ON=1
 export EXTRAE_CONFIG_FILE=extrae.xml
 
-export NANOS6_CONFIG=/gpfs/projects/bsc28/bsc28860/nanos6-cluster-benchmarks/build_segfault/nanos6.toml
+export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
 export NANOS6_CONFIG_OVERRIDE="version.debug=false,version.instrument="extrae",cluster.disable_remote=false"
 
 # Remove previous traces
