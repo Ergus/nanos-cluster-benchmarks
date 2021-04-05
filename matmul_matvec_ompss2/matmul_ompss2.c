@@ -16,6 +16,7 @@
  */
 
 #include <stdio.h>
+#include <libgen.h>
 
 #include "ArgParserC/argparser.h"
 
@@ -116,8 +117,6 @@ void matvec_tasks(const double *A, const double *B, double *C,
 #error FETCHTASK value not valid.
 #endif // FETCHTASK
 
-#if WITH_NODE == 1
-
 void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it
 ) {
@@ -125,7 +124,6 @@ void matvec_tasks(const double *A, const double *B, double *C,
 		printf("# matvec_weak_node FETCHTASK %d\n", FETCHTASK);
 	myassert(ts <= dim);
 	modcheck(dim, ts);
-
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 
@@ -135,11 +133,16 @@ void matvec_tasks(const double *A, const double *B, double *C,
 
 	for (size_t i = 0; i < dim; i += rowsPerNode) {
 
+#if WITH_NODE == 1
 		int nodeid = i / rowsPerNode;
+#else
+		int nodeid = nanos6_cluster_no_hint;
+#endif
 
 		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])			\
 			weakin(B[0; dim * colsBC])									\
-			weakout(C[i; rowsPerNode * colsBC]) node(nodeid) label("weakmatvec")
+			weakout(C[i; rowsPerNode * colsBC])							\
+			node(nodeid) label("weakmatvec")
 		{
 			if (THECOND) {
 				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
@@ -160,61 +163,13 @@ void matvec_tasks(const double *A, const double *B, double *C,
 		}
 	}
 }
-
-#else // WITH_NODE
-
-void matvec_tasks(const double *A, const double *B, double *C,
-                  size_t ts, size_t dim, size_t colsBC, size_t it
-) {
-	if (it == 0)
-		printf("# matvec_weak_nonode FETCHTASK %d\n", FETCHTASK);
-
-	const size_t numNodes = nanos6_get_num_cluster_nodes();
-	myassert(ts <= dim);
-	modcheck(dim, ts);
-
-	const size_t rowsPerNode = dim / numNodes;
-	myassert(ts <= rowsPerNode);
-	modcheck(rowsPerNode, ts);
-
-	for (size_t i = 0; i < dim; i += rowsPerNode) {
-
-		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])		\
-			weakin(B[0; dim * colsBC])								\
-			weakout(C[i; rowsPerNode * colsBC]) label("weakmatvec")
-		{
-			if (THECOND) {
-				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
-					in(B[0; dim * colsBC])								\
-					out(C[i; rowsPerNode * colsBC]) label("fetchtask")
-				{
-				}
-			}
-
-			for (size_t j = i; j < i + rowsPerNode; j += ts) {
-				#pragma oss task in(A[j * dim; ts * dim])		\
-					in(B[0; dim * colsBC])						\
-					out(C[j; ts * colsBC]) label("strongmatvec")
-				matmul_base(&A[j * dim], B, &C[j], ts, dim, colsBC);
-			}
-		}
-	}
-}
-
-#endif // WITH_NODE
-
 #endif // ISSTRONG
-
-#if ISMATVEC == 1
-#define PREFIX "matvec"
-#else
-#define PREFIX "matmul"
-#endif
 
 int main(int argc, char* argv[])
 {
 	init_args(argc, argv);
 
+	const char *PREFIX = basename(argv[0]);
 	const int ROWS = create_cl_int ("Rows");
 	const int TS = create_cl_int ("Tasksize");
 	const int ITS = create_optional_cl_int ("Iterations", 1);
@@ -249,9 +204,11 @@ int main(int argc, char* argv[])
 		printmatrix_task(C, ROWS, colsBC, PREFIX);
 
 		if (PRINT > 1) {
-			const bool valid = validate(A, B, C, ROWS, ROWS);
+			const bool valid = validate(A, B, C, ROWS, colsBC);
 			printf("# Verification: %s\n", (valid ? "Success" : "Failed"));
 		}
+
+		#pragma oss taskwait
 	}
 
 	free_matrix(A, ROWS * ROWS);

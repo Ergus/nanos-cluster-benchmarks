@@ -108,14 +108,14 @@ extern "C" {
 		}
 	}
 
-#define printmatrix_task(mat, rows, cols, prefix) \
+#define printmatrix_task(mat, rows, cols, prefix)	\
 	__print_task(mat, rows, cols, prefix, #mat)
 
 
 	bool validate(const double *A, const double *B, double *C,
 	              size_t dim, size_t colsBC)
 	{
-		bool success = true;
+		bool success = false;
 
 		#pragma oss task in(A[0; dim * dim])			\
 			in(B[0; dim * colsBC])						\
