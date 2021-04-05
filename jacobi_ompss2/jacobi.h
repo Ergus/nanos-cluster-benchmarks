@@ -30,7 +30,7 @@ extern "C" {
 	{
 		const size_t numNodes = nanos6_get_num_cluster_nodes();
 		myassert(dim >= ts);
-		myassert(dim / ts >= numNodes)
+		myassert(dim / ts >= numNodes);
 		modcheck(dim, ts);
 		modcheck(dim / numNodes, ts);
 
@@ -42,13 +42,13 @@ extern "C" {
 
 			#pragma oss task weakout(A[i * dim; rowsPerNode * dim])	\
 				weakout(B[i; rowsPerNode])							\
-				node(nodeid) label("initalize_weak")
+				node(nodeid) wait label("init_AB_weak")
 			{
 				for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
 
 					#pragma oss task out(A[j * dim; ts * dim])			\
 						out(B[j; ts])									\
-						node(nanos6_cluster_no_offload) label("initalize_slice")
+						node(nanos6_cluster_no_offload) label("init_AB_strong")
 					{
 						struct drand48_data drand_buf;
 						srand48_r(j, &drand_buf);
@@ -90,13 +90,13 @@ extern "C" {
 
 			int nodeid = i / rowsPerNode;
 
-			#pragma oss task weakout(x[i; rowsPerNode])	\
-				node(nodeid) label("initalize_weak")
+			#pragma oss task weakout(x[i; rowsPerNode])		\
+				node(nodeid) wait label("init_vec_weak")
 			{
 				for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
 
 					#pragma oss task out(x[j; ts])						\
-						node(nanos6_cluster_no_offload) label("initalize_slice")
+						node(nanos6_cluster_no_offload) label("init_vec_strong")
 					{
 						for (size_t k = j; k < j + ts; ++k) {
 							x[k] = val;
@@ -121,13 +121,13 @@ extern "C" {
 
 			#pragma oss task weakinout(A[i * dim; rowsPerNode * dim])	\
 				weakinout(b[i; rowsPerNode])							\
-				node(nodeid) label("initalize_weak")
+				node(nodeid) wait label("jacobi_modify_weak")
 			{
 				for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
 
 					#pragma oss task inout(A[j * dim; ts * dim])		\
 						inout(b[j; ts])									\
-						node(nanos6_cluster_no_offload) label("initalize_slice")
+						node(nanos6_cluster_no_offload) label("jacobi_modify_strong")
 					{
 						for (size_t k = j; k < j + ts; ++k) {
 							const double Akk = fabs(A[k * dim + k]);

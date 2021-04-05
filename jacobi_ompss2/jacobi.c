@@ -48,7 +48,7 @@ void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
 
 	for (size_t i = 0; i < dim; i += rowsPerNode) {
 
-		int nodeid = i / rowsPerNode;
+		const int nodeid = i / rowsPerNode;
 
 		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])			\
 			weakin(xin[0; dim])											\
