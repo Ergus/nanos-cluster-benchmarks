@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # 3.12.4 required to use FindPython
+
 cmake_minimum_required(VERSION 3.12.4)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -41,7 +42,7 @@ if (WITH_ASAN)
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
 endif ()
 
-
+find_package(MPI REQUIRED)
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 # add the subdirectories here
@@ -64,7 +65,7 @@ foreach (child ${children})
   endif ()
 endforeach ()
 
-# For the toml file
+# For the toml file ==============
 set(USE_NAMESPACE_TOML false)
 if (WITH_NAMESPACE)
   message("-- Using NAMESPACE")
@@ -76,6 +77,5 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
   set(VERSION_DEBUG_TOML false)
 endif ()
 
-#add the install targets
-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/log")
 configure_file(nanos6.toml nanos6.toml @ONLY)
+

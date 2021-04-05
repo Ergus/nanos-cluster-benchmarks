@@ -13,6 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
+  # install (copy) scripts
+  configure_file(validate.py validate.py @ONLY)
+else ()
+  message("Python interpreter not found")
+endif () # PYTHONINTERP_FOUND
+
+
 # The order is important
 SET(TESTLIST matmul matvec)
 foreach (ISMATVEC 0;1)
@@ -36,6 +44,10 @@ foreach (ISMATVEC 0;1)
 	PUBLIC -DISMATVEC=${ISMATVEC})
       target_link_libraries(${executable} argparser)
 
+      add_test(NAME Test_${executable}
+	COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
+      set_property(TEST Test_${executable} PROPERTY ENVIRONMENT
+	"NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
     endforeach ()
   endforeach ()
 
@@ -51,15 +63,24 @@ foreach (ISMATVEC 0;1)
       PUBLIC -DISSTRONG=${STRONGTYPE}
       PUBLIC -DISMATVEC=${ISMATVEC})
     target_link_libraries(${executable} argparser)
+
+    add_test(NAME Test_${executable}
+      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
+    set_property(TEST Test_${executable} PROPERTY ENVIRONMENT
+      "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+
+    # Add result test
+    if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
+      add_test(NAME Test_${executable}_results
+	COMMAND ${Python_EXECUTABLE} prove.py ./${executable}_{A,B,C}.mat)
+    endif () # Python_FOUND
+
   endforeach ()
 
   configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
   configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
 
 endforeach ()
-
-# install (copy) scripts
-configure_file(validate.py validate.py @ONLY)
 
 # Submit
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
@@ -68,7 +89,6 @@ configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY
 # Extrae
 configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_trace.py COPYONLY)
 
 # Process
 configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process_mn.py COPYONLY)
