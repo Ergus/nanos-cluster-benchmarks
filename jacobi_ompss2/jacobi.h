@@ -153,20 +153,6 @@ extern "C" {
 	}
 
 
-	void matmul_base(const double *A, const double *B, double * const C,
-	                 size_t lrowsA, size_t dim)
-	{
-		for (size_t i = 0; i < lrowsA; ++i) {
-			C[i] = 0.0;
-
-			for (size_t j = 0; j < dim; ++j) {
-				const double temp = A[i * dim + j];
-
-				C[i] += (temp * B[j]);
-			}
-		}
-	}
-
 	void __print_task(const double * const mat,
 	                  const size_t rows, const size_t cols,
 	                  const char prefix[64], const char name[64])

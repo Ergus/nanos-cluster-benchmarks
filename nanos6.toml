@@ -16,7 +16,7 @@
 	dependencies = "regions"
 	# Choose the instrumentation variant to run. Default is "none"
 	# Possible values: "none", "ctf", "extrae", "graph", "lint", "stats", "verbose"
-	instrument = "none"
+	instrument = @USE_INSTRUMENT@
 
 [turbo]
 	# Choose whether enabling floating-point unit optimizations in all Nanos6 threads. Enabling this
@@ -66,10 +66,14 @@
 	verbose = false
 	# The verbose file's name. Default is "nanos6-output-hwcounters.txt"
 	verbose_file = "nanos6-output-hwcounters.txt"
-	[hardware_counters.rapl]
-		# Enable the RAPL backend of the hardware counters module for runtime-wise energy
-		# metrics. Default is false
+	[hardware_counters.papi]
+		# Enable the PAPI backend of the hardware counters module. Default is false
 		enabled = false
+		# The list of PAPI counters to read. Default is "PAPI_TOT_INS" and "PAPI_TOT_CYC"
+		counters = [
+			"PAPI_TOT_INS",
+			"PAPI_TOT_CYC"
+		]
 
 [monitoring]
 	# Indicate whether enabling the Monitoring of tasks and CPUs, which allows the usage of
@@ -99,6 +103,8 @@
 		as_threads = true
 		# Choose the detail level of the information generated in extrae traces. Default is 1
 		detail_level = 1
+		# Extrae events concepts to emit. Possible values on README.md
+		areas = ["all", "!DependencySystem"]
 	[instrument.stats]
 		# The outfile file for emitting the statistics. Default is the standard error
 		output_file = "/dev/stderr"
@@ -132,6 +138,16 @@
 	va_start = 0x00000000
 	# Use namespace code.
 	use_namespace = @USE_NAMESPACE_TOML@
+	# Disable propagation of dependencies in the remote namespace. Default is false
+	disable_remote = false
+	# Disable the "autowait" feature, which disables early release for accesses of offloaded
+	# tasks that are not propagated in the remote namespace. Default is false
+	disable_autowait = false
+
+	[cluster.mpi]
+		# Decide if mpi messenger must use a different
+		# communicator for data_raws messages. Default is true
+		comm_data_raw = true
 
 [memory]
 	[memory.pool]

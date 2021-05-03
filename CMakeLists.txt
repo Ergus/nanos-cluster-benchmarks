@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# 3.9 required to use FindOpenMP
 # 3.12.4 required to use FindPython
-
 cmake_minimum_required(VERSION 3.12.4)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -24,6 +24,7 @@ project(nanos6_benchmarks)
 
 option(WITH_NAMESPACE "Build tests for namespace code" true)
 option(WITH_ASAN "Build tests with address sanitizer" false)
+option(WITH_EXTRAE "Build with Extrae traces support" false)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -37,12 +38,27 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 if (WITH_ASAN)
   message("Using ASAN")
   add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
+  add_compile_definitions(__WITH_ASAN=1)
 
   set (CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
 endif ()
 
+# Enable Extrae
+set(USE_INSTRUMENT "none")
+if (WITH_EXTRAE)
+  find_package(Extrae REQUIRED COMPONENTS ompitrace)
+  if (Extrae_FOUND)
+    add_compile_definitions(__WITH_EXTRAE=1)
+    include_directories(${EXTRAE_INCLUDES})
+    link_libraries(${EXTRAE_LIBRARIES})
+  endif ()
+  set(USE_INSTRUMENT "extrae")
+endif()
+
 find_package(MPI REQUIRED)
+link_libraries(MPI::MPI_C)
+
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 # add the subdirectories here
