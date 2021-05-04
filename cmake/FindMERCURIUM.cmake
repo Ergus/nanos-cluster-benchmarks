@@ -22,6 +22,7 @@
 # MERCURIUM_CC  - Mercurium C compiler if found.
 # MERCURIUM_CXX - Mercurium C++ compiler if found.
 # MERCURIUM_FC  - Mercurium Fortran compiler if found.
+# in the components the valid values are: intel or gnu
 ###############################################################################
 
 include(FindPackageHandleStandardArgs)
@@ -33,21 +34,40 @@ unset(MERCURIUM_CC)
 unset(MERCURIUM_CXX)
 unset(MERCURIUM_FC)
 
+# Handle components
+if (MERCURIUM_FIND_COMPONENTS)
+  if (MERCURIUM_FIND_COMPONENTS STREQUAL "intel")
+    set(MCC imcc)
+    set(MCXX imcxx)
+    set(MFC imfc)
+  elseif (MERCURIUM_FIND_COMPONENTS STREQUAL "gnu")
+    set(MCC mcc)
+    set(MCXX mcxx)
+    set(MFC mfc)
+  else ()
+    message(FATAL_ERROR "Invalid mercurium component value: ${MERCURIUM_FIND_COMPONENTS}")
+  endif ()
+else()
+  set(MCC mcc)
+  set(MCXX mcxx)
+  set(MFC mfc)
+endif ()
+
 # Search the different compilers
 find_program(MERCURIUM_CC
-  NAMES mcc
+  NAMES ${MCC}
   HINTS ${CMAKE_MERCURIUM_PATH} ENV MERCURIUM_PATH
   DOC "MERCURIUM C compiler"
   PATH_SUFFIXES bin)
 
 find_program(MERCURIUM_CXX
-  NAMES mcxx
+  NAMES ${MCXX}
   HINTS ${CMAKE_MERCURIUM_PATH} ENV MERCURIUM_PATH
   DOC "MERCURIUM C++ compiler"
   PATH_SUFFIXES bin)
 
 find_program(MERCURIUM_FC
-  NAMES mfc
+  NAMES ${MFC}
   HINTS ${CMAKE_MERCURIUM_PATH} ENV MERCURIUM_PATH
   DOC "MERCURIUM FORTRAN compiler"
   PATH_SUFFIXES bin)
