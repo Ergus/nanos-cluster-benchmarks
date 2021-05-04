@@ -36,7 +36,7 @@ void jacobi_base(const double *A, const double *B, double *xin, double *xout,
                  size_t ts, size_t dim)
 {
 	for (size_t i = 0; i < ts; ++i) {
-		nanos6_instrument_event(9910002, 1);
+		nanos6_instrument_event(9910002, dim);
 
 		xout[i] = B[i];
 

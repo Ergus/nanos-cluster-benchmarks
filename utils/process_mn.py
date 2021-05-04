@@ -23,7 +23,7 @@ from statistics import mean, stdev
 import json
 
 re_ignore = re.compile('(# [^-=]+)|(^performance)')    # Comments like # Anything
-re_pair = re.compile('(?P<key>[\w,\s]+): (?P<value>\d+(?P<float>\.\d+(e\+\d+)?)?)') # KEY: number
+re_pair = re.compile('(?P<key>[\w,\s]+): ((?P<value>(\d+)(?P<float>\.\d+(e\+\d+)?)?)|(?P<str>.+))') # KEY: number
 re_next = re.compile('# -+')            # Divisor like # ---------
 re_report = re.compile('# =+')          # Divisor like # =========
 re_value = re.compile('((\w+)|performance$ time)$')

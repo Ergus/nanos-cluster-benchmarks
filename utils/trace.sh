@@ -32,8 +32,9 @@ export LD_PRELOAD=${EXTRAE_HOME}/lib/libnanosmpitrace.so
 $@
 unset LD_PRELOAD
 
-# Create the mpits
-if  [ -z ${MPI_LOCALRANKID} ] || [ $MPI_LOCALRANKID -eq 0 ]; then
-	echo "Creating mpits file manually"
-	ls ${PWD}/set-0/*.mpit | sed 's/$/ named/' > TRACE.mpits
-fi
+# Create the mpits; in IMPI the MPI_LOCALRANKID is not what we expect.
+# So we have to create the trace manually
+# if  [ -z ${MPI_LOCALRANKID} ] || [ $MPI_LOCALRANKID -eq 0 ]; then
+# 	echo "Creating mpits file manually"
+# 	ls ${PWD}/set-0/*.mpit | sed 's/$/ named/' > TRACE.mpits
+# fi
