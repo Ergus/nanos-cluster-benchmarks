@@ -32,6 +32,7 @@ extern "C" {
 #ifdef _OPENMP
 #include <omp.h>
 #else
+#pragma GCC warning "Compiling without OpenMP"
 #define omp_get_thread_num() 0
 #define omp_set_num_threads(var) {}
 #define omp_set_dynamic(NUM)
