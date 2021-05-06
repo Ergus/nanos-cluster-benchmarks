@@ -22,6 +22,7 @@
 extern "C" {
 #endif
 
+#include <nanos6.h>
 #include <nanos6/debug.h>
 
 #include "cmacros/macros.h"
@@ -165,6 +166,13 @@ extern "C" {
 
 #define printmatrix_task(mat, rows, cols, prefix) \
 	__print_task(mat, rows, cols, prefix, #mat)
+
+#if __WITH_EXTRAE
+#define inst_event(evt, val) nanos6_instrument_event(evt, val)
+#else // __WITH_EXTRAE
+#define inst_event(evt, val)
+#endif // __WITH_EXTRAE
+
 
 #ifdef __cplusplus
 }
