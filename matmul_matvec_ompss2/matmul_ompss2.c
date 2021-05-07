@@ -53,7 +53,7 @@ double *alloc_init(const size_t rows, size_t cols, size_t ts, bool init)
 			{
 				for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
 
-					#pragma oss task out(ret[j * cols; ts * cols]) \
+					#pragma oss task out(ret[j * cols; ts * cols])		\
 						node(nanos6_cluster_no_offload) label("initalize_slice")
 					{
 						struct drand48_data drand_buf;
@@ -93,10 +93,10 @@ void matvec_tasks(const double *A, const double *B, double *C,
 		int nodeid = i / rowsPerNode;
 
 		#pragma oss task in(A[i * dim; ts * dim]) \
-			in(B[0; colsBC * dim]) \
+			in(B[0; dim * colsBC]) \
 			out(C[i * colsBC; ts * colsBC]) \
 			node(nodeid) label("strongmatvec")
-		matmul_base(&A[i * dim], B, &C[i], ts, dim, colsBC);
+		matmul_base(&A[i * dim], B, &C[i * colsBC], ts, dim, colsBC);
 	}
 }
 
@@ -116,10 +116,10 @@ void matvec_tasks(const double *A, const double *B, double *C,
 		int nodeid = i % numNodes;
 
 		#pragma oss task in(A[i * dim; ts * dim]) \
-			in(B[0; colsBC * dim]) \
+			in(B[0; dim * colsBC]) \
 			out(C[i * colsBC; ts * colsBC]) \
 			node(nodeid) label("strongmatvec")
-		matmul_base(&A[i * dim], B, &C[i], ts, dim, colsBC);
+		matmul_base(&A[i * dim], B, &C[i * colsBC], ts, dim, colsBC);
 	}
 }
 
@@ -146,14 +146,15 @@ void matvec_tasks(const double *A, const double *B, double *C,
 
 		#pragma oss task in(A[i * dim; rowsPerNode * dim])				\
 			in(B[0; dim * colsBC])										\
-			out(C[i; rowsPerNode * colsBC]) node(nodeid) label("weakmatvec")
+			out(C[i * colsBC; rowsPerNode * colsBC])					\
+			node(nodeid) label("weakmatvec")
 		{
 			for (size_t j = i; j < i + rowsPerNode; j += ts) {
 				#pragma oss task in(A[j * dim; ts * dim])				\
 					in(B[0; dim * colsBC])								\
-					out(C[j; ts * colsBC])								\
+					out(C[j * colsBC; ts * colsBC])								\
 					node(nanos6_cluster_no_offload) label("strongmatvec")
-				matmul_base(&A[j * dim], B, &C[j], ts, dim, colsBC);
+				matmul_base(&A[j * dim], B, &C[j * colsBC], ts, dim, colsBC);
 			}
 		}
 	}
@@ -195,13 +196,13 @@ void matvec_tasks(const double *A, const double *B, double *C,
 
 		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])			\
 			weakin(B[0; dim * colsBC])									\
-			weakout(C[i; rowsPerNode * colsBC])							\
+			weakout(C[i * colsBC; rowsPerNode * colsBC])				\
 			node(nodeid) label("weakmatvec")
 		{
 			if (THECOND) {
 				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
 					in(B[0; dim * colsBC])								\
-					out(C[i; rowsPerNode * colsBC])						\
+					out(C[i * colsBC; rowsPerNode * colsBC])						\
 					node(nanos6_cluster_no_offload) label("fetchtask")
 				{
 				}
@@ -210,9 +211,9 @@ void matvec_tasks(const double *A, const double *B, double *C,
 			for (size_t j = i; j < i + rowsPerNode; j += ts) {
 				#pragma oss task in(A[j * dim; ts * dim])		\
 					in(B[0; dim * colsBC])						\
-					out(C[j; ts * colsBC])						\
+					out(C[j * colsBC; ts * colsBC])						\
 					node(nanos6_cluster_no_offload) label("strongmatvec")
-				matmul_base(&A[j * dim], B, &C[j], ts, dim, colsBC);
+				matmul_base(&A[j * dim], B, &C[j * colsBC], ts, dim, colsBC);
 			}
 		}
 	}

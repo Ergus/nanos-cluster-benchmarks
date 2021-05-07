@@ -36,7 +36,7 @@ foreach (ISMATVEC 0;1)
       list(GET NODELIST ${WITH_NODE} NODESUFIX)
 
       set(executable "${TEST}_weak_${FETCHSUFIX}_${NODESUFIX}")
-      message("Add benchmark: ${executable}")
+      message("- Add benchmark: ${executable}")
       add_executable(${executable} matmul_ompss2.c)
       target_compile_definitions(${executable}
 	PUBLIC -DFETCHTASK=${FETCHTASK}
@@ -57,7 +57,7 @@ foreach (ISMATVEC 0;1)
     list(GET STRONGLIST ${STRONGTYPE} STRONGSUFIX)
 
     set(executable "${TEST}_strong_${STRONGSUFIX}")
-    message("Add benchmark: ${executable}")
+    message("- Add benchmark: ${executable}")
     add_executable(${executable} matmul_ompss2.c)
     target_compile_definitions(${executable}
       PUBLIC -DISSTRONG=${STRONGTYPE}
