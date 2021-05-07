@@ -25,15 +25,6 @@ import re
 
 data = {}
 
-# def load_file(input_file):
-#     """Process the files and print the data in json format."""
-
-#     # data[filename] = json.load(input_file)
-#     print("Loading: ", filename)
-#     data[filename] = pd.DataFrame(json.load(input_file))
-
-#     return filename
-
 def add_lines_and_scale(ax1, ax2, dt_ts, column, label):
     if dt_ts.empty:
         print("Ignoring: ", label)
@@ -64,32 +55,6 @@ def add_lines_and_scale(ax1, ax2, dt_ts, column, label):
     ax2.errorbar(x, sy, errsy, fmt ='o-', label=label)
 
 
-def add_lines(ax1, ax2, dt_ts, column, label):
-    assert dt_ts.empty == False
-    dt_ts = dt_ts.sort_values(by=['worldsize'])
-
-    x = dt_ts['worldsize']
-
-    # Time graph
-    y=dt_ts[column]
-    err=dt_ts[column+' stdev'].divide(dt_ts['executions']**1/2)
-    ax1.errorbar(x, y, err, fmt ='o-', label=label)
-
-    fact = 1
-    if dt_ts[x == fact].empty:
-        fact = 2
-
-    if dt_ts[x == fact].empty:
-        print (" Can't create scalability graph for: ", label)
-        return
-
-    one = dt_ts[x == fact][column].values[0]
-
-    # Scalability
-    sy = one / y
-    erry = sy * err / y
-    ax2.errorbar(x, sy, erry, fmt ='o-', label=label)
-
 def process_tasksize(rows, ts, column):
     """Create graphs time vs tasksize"""
 
@@ -116,11 +81,9 @@ def process_tasksize(rows, ts, column):
     for key in data:
         dt_key = data[key]
         key_splits=key.split("_")
+        label = " ".join(key_splits[1:])
 
         if  key.endswith("mpi"):
-
-            label = key_splits[-1]
-
             dt = dt_key[(dt_key['Rows'] == rows) & \
                         (dt_key['Tasksize'] == ts) ]
 
@@ -128,13 +91,13 @@ def process_tasksize(rows, ts, column):
 
         else:
             for ns in range(2):
-                label = key_splits[1]+" "+[" ns", " nons"][ns]
+                labelns = label + [" ns", " nons"][ns]
 
                 dt = dt_key[(dt_key['Rows'] == rows) & \
                             (dt_key['Tasksize'] == ts) & \
                             (dt_key['namespace_enabled'] == ns) ]
 
-                add_lines_and_scale(ax1, ax2, dt, column, label)
+                add_lines_and_scale(ax1, ax2, dt, column, labelns)
 
     plt.legend(loc='upper right',
                    bbox_to_anchor=(1.14, 2.2),
@@ -144,6 +107,9 @@ def process_tasksize(rows, ts, column):
     plt.savefig(filename)
     plt.close()
     print("Generated: ", filename)
+
+
+# Tasksize
 
 def process_all_tasksize():
     """Create all the blocksize graphs"""

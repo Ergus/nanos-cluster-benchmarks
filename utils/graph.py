@@ -38,17 +38,24 @@ def load_file(input_file):
 
 def add_lines(ax1, ax2, dt_ts, column, label):
     assert dt_ts.empty == False
+    dt_ts = dt_ts.sort_values(by=['worldsize'])
+
     x = dt_ts['worldsize']
 
-    row_one = dt_ts[x == 1]
-
-    one = row_one[column].values[0] / row_one['Iterations'].values[0]
-
     # Time graph
-    dt_ts_its = dt_ts['Iterations']
-    y=dt_ts[column].divide(dt_ts_its)
-    err=dt_ts[column+' stdev'].divide(dt_ts_its * dt_ts['executions']**1/2)
+    y=dt_ts[column]
+    err=dt_ts[column+' stdev'].divide(dt_ts['executions']**1/2)
     ax1.errorbar(x, y, err, fmt ='o-', label=label)
+
+    fact = 1
+    if dt_ts[x == fact].empty:
+        fact = 2
+
+    if dt_ts[x == fact].empty:
+        print (" Can't create scalability graph for: ", label)
+        return
+
+    one = dt_ts[x == fact][column].values[0]
 
     # Scalability
     sy = one / y
@@ -58,6 +65,7 @@ def add_lines(ax1, ax2, dt_ts, column, label):
 
 def process_tasksize(key, column):
     """Create graphs time vs tasksize"""
+    print("Call process_tasksize(%s, %s)" % (key, column))
     dt = data[key]
     row_vals = dt['Rows'].drop_duplicates()   # number of rows tests.
 
@@ -68,7 +76,7 @@ def process_tasksize(key, column):
         fig = plt.figure()
         gs = fig.add_gridspec(2, hspace=0)
         (ax1, ax2) = gs.subplots(sharex=True, sharey=False)
-        fig.suptitle(key)
+        fig.suptitle(key + " dim: " + str(rows))
 
         ax1.set_xlabel('Nodes')
         ax1.set_ylabel(column)
@@ -82,7 +90,7 @@ def process_tasksize(key, column):
         for ts in tasksize_vals:
             dt_ts = dt_rows[dt_rows['Tasksize'] == ts]
             if dt_ts.empty:
-                print("Ignore Tasksize: ", ts)
+                print(" Ignore Tasksize: ", ts)
                 continue
 
             add_lines(ax1, ax2, dt_ts, column, str(ts))
@@ -94,10 +102,11 @@ def process_tasksize(key, column):
         filename = column.replace(" ", "_")+"_"+key+"_"+str(rows)+".png"
         plt.savefig(filename)
         plt.close()
-        print("Generated: ", filename)
+        print(" Generated: ", filename)
 
 def process_bars_tasksize(key):
     """Create graphs time vs tasksize"""
+    print("Call process_bars_tasksize(%s)" % (key))
     dt = data[key]
     ts_vals = dt['Tasksize'].drop_duplicates()   # number of rows tests.
 
@@ -135,7 +144,7 @@ def process_bars_tasksize(key):
         filename = "Bars_"+key+"_"+str(ts)+".png"
         plt.savefig(filename)
         plt.close()
-        print("Generated: ", filename)
+        print(" Generated: ", filename)
 
 def process_group(dim, ts, keys, prefix):
     print("Processing group: ", dim, ts)
@@ -162,6 +171,9 @@ def process_group(dim, ts, keys, prefix):
             tag = split[2]+" "+split[4]
         elif key.find("mpi") != -1:
             tag = "mpi"
+        else:
+            printf(" Error: Unknown key type: ", key)
+            continue
 
         dt = data[key]
         dt_ts = dt.loc[(dt['Rows'] == dim) & (dt['Tasksize'] == ts)]
@@ -180,7 +192,7 @@ def process_group(dim, ts, keys, prefix):
     filename = prefix+"_"+str(dim)+"_"+str(ts)+".png"
     plt.savefig(filename)
     plt.close()
-    print("Generated: ", filename)
+    print(" Generated: ", filename)
 
 
 def process_all(prefix, myregex):
