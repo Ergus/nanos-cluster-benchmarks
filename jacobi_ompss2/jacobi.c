@@ -32,17 +32,20 @@
 #error FETCHTASK value not valid.
 #endif // FETCHTASK
 
-void jacobi_base(const double *A, const double *B, double *xin, double *xout,
-                 size_t ts, size_t dim)
-{
+extern void jacobi_base(
+	const double * __restrict__ A,
+	double Bi,
+	const double * __restrict__ xin,
+	double * __restrict__ xouti, size_t dim
+);
+
+void jacobi(const double *A, const double *B,
+            const double *xin, double *xout, size_t ts, size_t dim
+) {
 	for (size_t i = 0; i < ts; ++i) {
 		inst_event(9910002, dim);
 
-		xout[i] = B[i];
-
-		for (size_t j = 0; j < dim; ++j) {
-			xout[i] += A[i * dim + j] * xin[j];
-		}
+		jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
 
 		inst_event(9910002, 0);
 	}
@@ -90,7 +93,7 @@ void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
 					out(xout[j; ts])									\
 					node(nanos6_cluster_no_offload) label("strongjacobi")
 				{
-					jacobi_base(&A[j * dim], &B[j], xin, &xout[j], ts, dim);
+					jacobi(&A[j * dim], &B[j], xin, &xout[j], ts, dim);
 				}
 			}
 		}

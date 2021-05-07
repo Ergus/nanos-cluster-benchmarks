@@ -56,6 +56,8 @@ link_libraries(MPI::MPI_C)
 
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
+find_package(INTEL REQUIRED)
+
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)
 

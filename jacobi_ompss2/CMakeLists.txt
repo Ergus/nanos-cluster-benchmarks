@@ -17,18 +17,30 @@
 
 set(TEST "jacobi")
 
+# CMAKE_C_FLAGS_RELEASE is a space separated string.
+# But add_custom_command needs a list. In cmake lists are strings with ;
+string(REGEX REPLACE "[ \t]+" ";" LIBBASE_FLAGS ${CMAKE_C_FLAGS_RELEASE})
+
+add_custom_command(
+  OUTPUT libbase.o
+  COMMAND ${ICC} -c ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c ${LIBBASE_FLAGS} -o libbase.o
+  MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c
+  COMMENT "Building base object")
+
 SET(FETCHLIST nofetch fetchall fetchfirst)
 foreach (FETCHTASK 0;1;2)
   list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
 
-  SET(NODELIST nonode node)
+  set(EXECUTABLE "${TEST}_${FETCHSUFIX}")
+  message("- Add benchmark: ${EXECUTABLE}")
 
-  set(executable "${TEST}_${FETCHSUFIX}")
-  message("Add benchmark: ${executable}")
-  add_executable(${executable} jacobi.c)
-  target_compile_definitions(${executable}
+  add_executable(${EXECUTABLE} jacobi.c libbase.o)
+  target_compile_definitions(${EXECUTABLE}
     PUBLIC -DFETCHTASK=${FETCHTASK})
-  target_link_libraries(${executable} argparser)
+  target_link_libraries(${EXECUTABLE} argparser)
+
+  add_test(NAME Test_${EXECUTABLE}
+    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
 
 endforeach ()
 
