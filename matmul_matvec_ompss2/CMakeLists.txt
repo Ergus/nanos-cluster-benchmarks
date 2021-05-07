@@ -20,18 +20,38 @@ else ()
   message("Python interpreter not found")
 endif () # PYTHONINTERP_FOUND
 
+# Function to create tests for executable.
+function(create_test_pair executable)
+  # Execution test
+  add_test(NAME Test_${executable}
+    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
+  set_tests_properties(Test_${executable} PROPERTIES
+    ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
+    FIXTURES_SETUP ST_${executable})
 
-# The order is important
-SET(TESTLIST matmul matvec)
+  # Add result test
+  if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
+    add_test(NAME Test_${executable}_results
+      COMMAND ${Python_EXECUTABLE} validate.py
+      ${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
+
+    # execute result check only if the execution test succeeded.
+    set_tests_properties(Test_${executable}_results PROPERTIES
+      FIXTURES_REQUIRED ST_${executable})
+  endif () # Python_FOUND
+endfunction()
+
+
+SET(TESTLIST matmul matvec) # The order is important
 foreach (ISMATVEC 0;1)
   list(GET TESTLIST ${ISMATVEC} TEST)
 
-  # Weak
-  SET(FETCHLIST nofetch fetchall fetchfirst)
+  # weak tests.
+  SET(FETCHLIST nofetch fetchall fetchfirst) # fetch
   foreach (FETCHTASK 0;1;2)
     list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
 
-    SET(NODELIST nonode node)
+    SET(NODELIST nonode node) # node clause
     foreach (WITH_NODE 0;1)
       list(GET NODELIST ${WITH_NODE} NODESUFIX)
 
@@ -44,18 +64,7 @@ foreach (ISMATVEC 0;1)
 	PUBLIC -DISMATVEC=${ISMATVEC})
       target_link_libraries(${executable} argparser)
 
-      add_test(NAME Test_${executable}
-	COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
-      set_property(TEST Test_${executable} PROPERTY ENVIRONMENT
-	"NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
-
-      # Add result test
-      if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
-	add_test(NAME Test_${executable}_results
-	  COMMAND ${Python_EXECUTABLE} validate.py
-	  ${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
-      endif () # Python_FOUND
-
+      create_test_pair(${executable})
     endforeach ()
   endforeach ()
 
@@ -64,6 +73,7 @@ foreach (ISMATVEC 0;1)
   foreach (STRONGTYPE 1;2;3)
     list(GET STRONGLIST ${STRONGTYPE} STRONGSUFIX)
 
+    # Executable
     set(executable "${TEST}_strong_${STRONGSUFIX}")
     message("- Add benchmark: ${executable}")
     add_executable(${executable} matmul_ompss2.c)
@@ -72,23 +82,7 @@ foreach (ISMATVEC 0;1)
       PUBLIC -DISMATVEC=${ISMATVEC})
     target_link_libraries(${executable} argparser)
 
-    add_test(NAME Test_${executable}
-      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
-    set_tests_properties(Test_${executable} PROPERTIES
-      ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
-      FIXTURES_SETUP ST_${executable})
-
-    # Add result test
-    if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
-      add_test(NAME Test_${executable}_results
-	COMMAND ${Python_EXECUTABLE} validate.py
-	${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
-
-      # execute result check only if the execution test succeeded.
-      set_tests_properties(Test_${executable}_results PROPERTIES
-	FIXTURES_REQUIRED ST_${executable})
-    endif () # Python_FOUND
-
+    create_test_pair(${executable})
   endforeach ()
 
   configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
