@@ -74,14 +74,19 @@ foreach (ISMATVEC 0;1)
 
     add_test(NAME Test_${executable}
       COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
-    set_property(TEST Test_${executable} PROPERTY ENVIRONMENT
-      "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+    set_tests_properties(Test_${executable} PROPERTIES
+      ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
+      FIXTURES_SETUP ST_${executable})
 
     # Add result test
     if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
       add_test(NAME Test_${executable}_results
 	COMMAND ${Python_EXECUTABLE} validate.py
 	${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
+
+      # execute result check only if the execution test succeeded.
+      set_tests_properties(Test_${executable}_results PROPERTIES
+	FIXTURES_REQUIRED ST_${executable})
     endif () # Python_FOUND
 
   endforeach ()
