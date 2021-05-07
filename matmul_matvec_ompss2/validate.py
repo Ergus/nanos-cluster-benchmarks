@@ -17,6 +17,7 @@
 
 import sys
 import numpy as np
+import sys
 
 if __name__ == "__main__":
 
@@ -31,15 +32,18 @@ if __name__ == "__main__":
 
     norm = np.max(np.abs(C2 - C1))
 
+    print("Max difference: %g" % norm)
+
     if (norm > 1.0e-3):
         print("Error")
         i = 0
         for xb, xb2 in zip(C1, C2):
-            if np.abs(xb - xb2) > 1.0e-3:
+            L1 = np.abs(xb - xb2)
+            if not isinstance(L1, (int,float)) and L1 > 1.0e-3:
                 print ("i = %d b[i] = %g b2[i] = %g" % (i, xb, xb2))
                 i += 1
-    else:
-        print("Ok")
+        sys.exit(1)
 
-    print("Max difference: %g" % norm)
+    print("Ok")
+
 

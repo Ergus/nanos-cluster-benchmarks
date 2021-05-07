@@ -48,6 +48,14 @@ foreach (ISMATVEC 0;1)
 	COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
       set_property(TEST Test_${executable} PROPERTY ENVIRONMENT
 	"NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+
+      # Add result test
+      if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
+	add_test(NAME Test_${executable}_results
+	  COMMAND ${Python_EXECUTABLE} validate.py
+	  ${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
+      endif () # Python_FOUND
+
     endforeach ()
   endforeach ()
 
@@ -72,7 +80,8 @@ foreach (ISMATVEC 0;1)
     # Add result test
     if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
       add_test(NAME Test_${executable}_results
-	COMMAND ${Python_EXECUTABLE} prove.py ./${executable}_{A,B,C}.mat)
+	COMMAND ${Python_EXECUTABLE} validate.py
+	${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
     endif () # Python_FOUND
 
   endforeach ()
