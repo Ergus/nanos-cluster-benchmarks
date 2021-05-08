@@ -15,12 +15,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-
-#include "ArgParserC/argparser.h"
-
-#include "jacobi.h"
-
+#include "jacobi_ompss2.h"
 
 #if FETCHTASK == 0
 #define THECOND 0

@@ -15,17 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MATVEC_H
-#define MATVEC_H
+#ifndef MATVEC_OMPSS2_H
+#define MATVEC_OMPSS2_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <nanos6.h>
-#include <nanos6/debug.h>
-
-#include "cmacros/macros.h"
+#include "benchmarks_ompss.h"
 
 	void init_AB(double *A, double *B, const size_t dim, size_t ts)
 	{
@@ -153,29 +150,8 @@ extern "C" {
 		nanos6_dfree(mat, size * sizeof(double));
 	}
 
-
-	void __print_task(const double * const mat,
-	                  const size_t rows, const size_t cols,
-	                  const char prefix[64], const char name[64])
-	{
-		#pragma oss task in(mat[0; rows * cols]) label("matrix_print")
-		{
-			__print(mat, rows, cols, prefix, name);
-		}
-	}
-
-#define printmatrix_task(mat, rows, cols, prefix) \
-	__print_task(mat, rows, cols, prefix, #mat)
-
-#if __WITH_EXTRAE
-#define inst_event(evt, val) nanos6_instrument_event(evt, val)
-#else // __WITH_EXTRAE
-#define inst_event(evt, val)
-#endif // __WITH_EXTRAE
-
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // MATVEC_OMPSS2_H

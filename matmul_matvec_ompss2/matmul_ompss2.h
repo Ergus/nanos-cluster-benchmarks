@@ -22,9 +22,7 @@
 extern "C" {
 #endif
 
-#include <nanos6/debug.h>
-
-#include "cmacros/macros.h"
+#include "benchmarks_ompss.h"
 
 	void free_matrix(double *mat, size_t size)
 	{
@@ -48,20 +46,6 @@ extern "C" {
 			}
 		}
 	}
-
-	void __print_task(const double * const mat,
-	                  const size_t rows, const size_t cols,
-	                  const char prefix[64], const char name[64])
-	{
-		#pragma oss task in(mat[0; rows * cols]) label("matrix_print")
-		{
-			__print(mat, rows, cols, prefix, name);
-		}
-	}
-
-#define printmatrix_task(mat, rows, cols, prefix)	\
-	__print_task(mat, rows, cols, prefix, #mat)
-
 
 	bool validate(const double *A, const double *B, double *C,
 	              size_t dim, size_t colsBC)

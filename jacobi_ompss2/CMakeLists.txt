@@ -34,7 +34,7 @@ foreach (FETCHTASK 0;1;2)
   set(EXECUTABLE "${TEST}_${FETCHSUFIX}")
   message("- Add benchmark: ${EXECUTABLE}")
 
-  add_executable(${EXECUTABLE} jacobi.c libbase.o)
+  add_executable(${EXECUTABLE} jacobi_ompss2.c libbase.o)
   target_compile_definitions(${EXECUTABLE}
     PUBLIC -DFETCHTASK=${FETCHTASK})
   target_link_libraries(${EXECUTABLE} argparser)

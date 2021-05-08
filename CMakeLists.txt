@@ -45,10 +45,13 @@ if (WITH_ASAN)
 endif ()
 
 # Enable Extrae
-set(USE_INSTRUMENT "none")
 if (WITH_EXTRAE)
-  set(USE_INSTRUMENT "extrae")
-  add_compile_definitions(__WITH_EXTRAE=1)
+  find_package(Extrae REQUIRED COMPONENTS nanosmpitrace)
+  if (Extrae_FOUND)
+    add_compile_definitions(__WITH_EXTRAE=1)
+    include_directories(${EXTRAE_INCLUDES})
+    link_libraries(${EXTRAE_LIBRARIES})
+  endif ()
 endif()
 
 find_package(MPI REQUIRED)
