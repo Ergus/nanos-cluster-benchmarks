@@ -27,6 +27,8 @@ add_custom_command(
   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c
   COMMENT "Building base object")
 
+add_library(base STATIC libbase.o)
+
 SET(FETCHLIST nofetch fetchall fetchfirst)
 foreach (FETCHTASK 0;1;2)
   list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
@@ -34,10 +36,9 @@ foreach (FETCHTASK 0;1;2)
   set(EXECUTABLE "${TEST}_${FETCHSUFIX}")
   message("- Add benchmark: ${EXECUTABLE}")
 
-  add_executable(${EXECUTABLE} jacobi_ompss2.c libbase.o)
-  target_compile_definitions(${EXECUTABLE}
-    PUBLIC -DFETCHTASK=${FETCHTASK})
-  target_link_libraries(${EXECUTABLE} argparser)
+  add_executable(${EXECUTABLE} jacobi_ompss2.c)
+  target_compile_definitions(${EXECUTABLE} PUBLIC -DFETCHTASK=${FETCHTASK})
+  target_link_libraries(${EXECUTABLE} argparser base)
 
   add_test(NAME Test_${EXECUTABLE}
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)

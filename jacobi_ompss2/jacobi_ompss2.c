@@ -15,8 +15,6 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "jacobi_ompss2.h"
-
 #if FETCHTASK == 0
 #define THECOND 0
 #elif FETCHTASK == 1
@@ -26,6 +24,8 @@
 #else  // FETCHTASK
 #error FETCHTASK value not valid.
 #endif // FETCHTASK
+
+#include "jacobi_ompss2.h"
 
 extern void jacobi_base(
 	const double * __restrict__ A,
