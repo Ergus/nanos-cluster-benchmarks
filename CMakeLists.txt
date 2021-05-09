@@ -25,20 +25,21 @@ project(nanos6_benchmarks)
 option(WITH_NAMESPACE "Build tests for namespace code" true)
 option(WITH_ASAN "Build tests with address sanitizer" false)
 option(WITH_EXTRAE "Build with Extrae traces support" false)
+option(WITH_KEEP "Keep mcc intermediate files" false)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-add_compile_options("--ompss-2")
 add_compile_definitions(_GNU_SOURCE)
+add_compile_options("--ompss-2" $<$<BOOL:WITH_KEEP>:-k>)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
 # Enable address sanitizer
 if (WITH_ASAN)
   message("Using ASAN")
-  add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
   add_compile_definitions(__WITH_ASAN=1)
+  add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
 
   set (CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
