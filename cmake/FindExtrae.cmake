@@ -1,5 +1,20 @@
+# Copyright (C) 2021  Jimmy Aguilar Mena
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 ###############################################################################
-# Find OpenBlas
+# Find Extrae
 #
 # This sets the following variables:
 # EXTRAE_FOUND        - True if Extrae was found.
@@ -21,8 +36,7 @@ if (EXTRAE_HOME)
     PATHS ENV C_INCLUDE_PATH
     DOC "Extrae include path"
     PATH_SUFFIXES include
-    NO_DEFAULT_PATH
-    )
+    NO_DEFAULT_PATH)
 
   find_library (EXTRAE_LIBRARY
     NAMES ${Extrae_FIND_COMPONENTS}
@@ -40,5 +54,7 @@ endif ()
 
 mark_as_advanced(EXTRAE_INCLUDES EXTRAE_LIBRARIES)
 
-set (EXTRAE_INCLUDES  ${EXTRAE_INCLUDE})
-set (EXTRAE_LIBRARIES ${EXTRAE_LIBRARY})
+if (EXTRAE_FOUND)
+  set(EXTRAE_INCLUDES  ${EXTRAE_INCLUDE})
+  set(EXTRAE_LIBRARIES ${EXTRAE_LIBRARY})
+endif ()
