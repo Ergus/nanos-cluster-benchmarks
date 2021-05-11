@@ -55,6 +55,10 @@ if (WITH_EXTRAE)
   endif ()
 endif()
 
+find_package(Numa REQUIRED)
+include_directories(${NUMA_INCLUDES})
+link_libraries(${NUMA_LIBRARIES})
+
 find_package(MPI REQUIRED)
 link_libraries(MPI::MPI_C)
 

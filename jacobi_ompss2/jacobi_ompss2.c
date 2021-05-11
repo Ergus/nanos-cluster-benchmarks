@@ -37,6 +37,17 @@ extern void jacobi_base(
 void jacobi(const double *A, const double *B,
             const double *xin, double *xout, size_t ts, size_t dim
 ) {
+	const long cpu_numa = nanos6_get_current_numa();
+	const long ptr_numa = get_numa_from_address((void*) A);
+	const long ptr_B = get_numa_from_address((void*) B);
+	const long ptr_xin = get_numa_from_address((void*) xin);
+	const long ptr_xout = get_numa_from_address((void*) xout);
+
+	printf("Attention!: cpu %d; A %d; B %d; xin %d; xout %d\n",
+	       cpu_numa, ptr_numa, ptr_B, ptr_xin, ptr_xout);
+	/* if (cpu_numa != ptr_numa) { */
+	/* } */
+
 	for (size_t i = 0; i < ts; ++i) {
 		inst_event(9910002, dim);
 

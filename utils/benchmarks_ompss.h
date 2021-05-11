@@ -29,6 +29,11 @@ extern "C" {
 #include <stdio.h>
 #include <libgen.h>  // basename
 #include <assert.h>
+#include <syscall.h>
+#include <errno.h>
+
+#include <numaif.h>
+
 #include <nanos6.h>
 #include <nanos6/debug.h>
 
@@ -65,6 +70,22 @@ extern "C" {
 #define printmatrix_task(mat, rows, cols, prefix)	\
 	__print_task(mat, rows, cols, prefix, #mat)
 
+
+	int get_numa_from_address(void *ptr)
+	{
+		int status;
+		int numa_node = -1;
+		const int ret = get_mempolicy(&numa_node, NULL, 0, ptr, MPOL_F_NODE | MPOL_F_ADDR);
+		/* const int ret = move_pages(0 , 1, &ptr, NULL, &numa_node, 0); */
+
+		if (ret != 0) {
+			int errnum = errno;
+			perror("Numa error: ");
+			return -1;
+		}
+
+		return numa_node;
+	}
 
 
 #ifdef __cplusplus

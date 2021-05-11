@@ -36,15 +36,14 @@ find_path(NUMA_INCLUDE
   PATH_SUFFIXES include)
 
 find_library(NUMA_LIBRARY
-  NAMES ${Extrae_FIND_COMPONENTS}
+  NAMES numa
   HINTS ENV NUMA_ROOT_DIR
   PATHS ENV LD_LIBRARY_PATH
   REQUIRED
   DOC "Numa library"
   PATH_SUFFIXES lib lib64 lib32)
 
-find_package_handle_standard_args (NUMA
-  REQUIRED_VARS NUMA_LIBRARY NUMA_INCLUDE)
+find_package_handle_standard_args (Numa REQUIRED_VARS NUMA_LIBRARY NUMA_INCLUDE)
 
 mark_as_advanced(NUMA_INCLUDES NUMA_LIBRARIES)
 
