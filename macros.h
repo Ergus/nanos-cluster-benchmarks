@@ -139,6 +139,32 @@ extern "C" {
 		return -1;
 	}
 
+	static inline int copy_file(const char in[], const char out[])
+	{
+		FILE *fin = fopen(in, "r"),
+			*fout = (out == NULL) ? stdout : fopen(out, "w");
+
+		if (fin == NULL || fout == NULL)
+		{
+			fprintf(stderr, "Error coping file in=%p out=%p\n",
+			        fin, fout);
+			return -1;
+		}
+
+		char ch;
+		while( ( ch = fgetc(fin) ) != EOF ) {
+			fputc(ch, fout);
+		}
+
+		fclose(fin);
+
+		if (fout != NULL && fout != stdout) {
+			fclose(fout);
+		}
+
+		return 0;
+	}
+
 #ifdef __cplusplus
 }
 #endif
