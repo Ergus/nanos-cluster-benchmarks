@@ -21,6 +21,7 @@ set(TEST "jacobi")
 # But add_custom_command needs a list. In cmake lists are strings with ;
 string(REGEX REPLACE "[ \t]+" ";" LIBBASE_FLAGS ${CMAKE_C_FLAGS_RELEASE})
 
+# libbase.a
 add_custom_command(
   OUTPUT libbase.o
   COMMAND ${ICC} -c ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c ${LIBBASE_FLAGS} -o libbase.o
@@ -42,8 +43,14 @@ foreach (FETCHTASK 0;1;2)
 
   add_test(NAME Test_${EXECUTABLE}
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
-
 endforeach ()
+
+# jacobi serial
+add_executable(jacobi_serial jacobi_serial.c)
+target_link_libraries(jacobi_serial argparser base)
+
+add_test(NAME Test_jacobi_serial
+  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_serial 128 8 3)
 
 # install (copy) scripts
 # Submit

@@ -94,8 +94,10 @@ if (WITH_NAMESPACE)
 endif ()
 
 set(VERSION_DEBUG_TOML true)
+set(USE_TURBO_TOML false)
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
   set(VERSION_DEBUG_TOML false)
+  set(USE_TURBO_TOML true)
 endif ()
 
 configure_file(nanos6.toml nanos6.toml @ONLY)

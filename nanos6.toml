@@ -23,7 +23,7 @@
 	# option can speedup the floating-point computations in user tasks, but may produce imprecise
 	# results. It enables flush-to-zero (FZ) and denormals are zero (DAZ) optimizations in Intel®
 	# processors. Default is false
-	enabled = false
+	enabled = @USE_TURBO_TOML@
 
 [scheduler]
 	# Choose the task scheduling policy. Default is "fifo"
