@@ -28,6 +28,12 @@ extern "C" {
 #endif
 
 // C headers
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <stdbool.h>
+#include <string.h>
+#include <sched.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -41,13 +47,6 @@ extern "C" {
 #define omp_set_schedule(...)
 #define omp_sched_static
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <stdbool.h>
-#include <string.h>
-#include <sched.h>
 
 #define imin(x, y) (((x) < (y)) ? (x) : (y))
 #define imax(x, y) (((x) > (y)) ? (x) : (y))
@@ -78,9 +77,11 @@ extern "C" {
 	}
 
 #ifndef NDEBUG
-#define dprintf(...) fprintf(stderr,__VA_ARGS__)
+#define dbprintf(...) fprintf(stderr, __VA_ARGS__)
+#define dbprintf_if(cond, ...) if (cond) fprintf(stderr, __VA_ARGS__)
 #else
-#define dprintf(...) {}
+#define dbprintf(...)
+#define dbprintf_if(...)
 #endif
 
 
@@ -110,29 +111,18 @@ extern "C" {
 #define printmatrix(mat, rows, cols, prefix) \
 	__print(mat, rows, cols, prefix, #mat)
 
-
-	static inline void matrix_init(double * const __restrict__ array,
-	                               const size_t rows, const size_t cols, int seed)
-	{
+	static inline void block_init(double * const __restrict__ array,
+	                              const size_t rows, const size_t cols, int seed
+	) {
 		const size_t fullsize = rows * cols;
 
-#ifdef _OPENMP
-		#pragma omp parallel
-#endif
-		{
-			size_t i;
+		struct drand48_data drand_buf;
+		srand48_r(seed == 0 ? 1 : seed);
+		double x;
 
-			struct drand48_data drand_buf;
-			srand48_r(seed + omp_get_thread_num(), &drand_buf);
-			double x;
-
-#ifdef _OPENMP
-			#pragma omp for
-#endif
-			for(i = 0; i < fullsize; ++i) {
-				drand48_r(&drand_buf, &x);
-				array[i] = x;
-			}
+		for(size_t i = 0; i < fullsize; ++i) {
+			drand48_r(&drand_buf, &x);
+			array[i] = x;
 		}
 	}
 
