@@ -38,19 +38,25 @@ resdir="results/@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${suffix}"
 mkdir -p ${resdir}
 echo "# Output directory: ${resdir}"
 
-nodes=(1 2 4 8 16)
-echo "# List num nodes: ${nodes[*]}"
+ntasks=(1 2 4 8 16 32)
+echo "# List num ntasks: ${nodes[*]}"
 
-for node in ${nodes[@]}; do
-	echo "# Submitting for ${node} node[s]"
+for ntask in ${ntasks[@]}; do
+	echo "# Submitting for ${ntask} task[s]"
 
-	jobname="@TEST@_${node}"
+	node=$(( (ntask + 1) / 2 * 2 )) # allocate 2 tasks/ node
 
  	sbatch --ntasks=${node} \
 		   --time=${ARGS[w]} \
 		   --qos=${ARGS[q]} \
- 		   --job-name=${jobname} \
+ 		   --job-name="@TEST@_${ntask}" \
  		   --output="${resdir}/%x_%j.out" \
  		   --error="${resdir}/%x_%j.err" \
- 		   ./submit_@TEST@_dim.sh -R ${ARGS[R]} -D ${ARGS[D]} -B ${ARGS[B]} -I ${ARGS[I]} -W ${ARGS[W]}
+ 		   ./submit_@TEST@_dim.sh \
+		   -R ${ARGS[R]} \
+		   -D ${ARGS[D]} \
+		   -B ${ARGS[B]} \
+		   -I ${ARGS[I]} \
+		   -W ${ARGS[W]} \
+		   -n ${ntask}
 done
