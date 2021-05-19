@@ -46,7 +46,9 @@ if (WITH_ASAN)
 endif ()
 
 # Enable Extrae
+set(USE_INSTRUMENT "none")
 if (WITH_EXTRAE)
+  set(USE_INSTRUMENT "extrae")
   find_package(Extrae REQUIRED COMPONENTS nanosmpitrace)
   if (Extrae_FOUND)
     add_compile_definitions(__WITH_EXTRAE=1)
