@@ -89,10 +89,13 @@ extern "C" {
 	                           const size_t rows, const size_t cols,
 	                           const char prefix[64], const char name[64])
 	{
-		char filename[256];
-		sprintf(filename,"%s_%s.mat", prefix, name);
-		FILE *fp = fopen(filename, "w+");
-		myassert(fp);
+		FILE *fp = stdout;
+		if (prefix != NULL) {
+			char filename[256];
+			sprintf(filename,"%s_%s.mat", prefix, name);
+			fp = fopen(filename, "w+");
+			myassert(fp);
+		}
 
 		fprintf(fp, "# name: %s\n", name);
 		fprintf(fp, "# type: matrix\n");
@@ -105,19 +108,21 @@ extern "C" {
 			}
 			fprintf(fp,"\n");
 		}
-		fclose(fp);
+		if (fp != stdout) {
+			fclose(fp);
+		}
 	}
 
 #define printmatrix(mat, rows, cols, prefix) \
 	__print(mat, rows, cols, prefix, #mat)
 
-	static inline void block_init(double * const __restrict__ array,
-	                              const size_t rows, const size_t cols, int seed
+	inline void block_init(double * const __restrict__ array,
+	                       const size_t rows, const size_t cols, int seed
 	) {
 		const size_t fullsize = rows * cols;
 
 		struct drand48_data drand_buf;
-		srand48_r(seed == 0 ? 1 : seed);
+		srand48_r(seed == 0 ? 1 : seed, &drand_buf);
 		double x;
 
 		for(size_t i = 0; i < fullsize; ++i) {
@@ -126,7 +131,7 @@ extern "C" {
 		}
 	}
 
-	static inline int count_sched_cpus()
+	inline int count_sched_cpus()
 	{
 		cpu_set_t mask;
 		if (sched_getaffinity(0, sizeof(mask), &mask) == 0)
