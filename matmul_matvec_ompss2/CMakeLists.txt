@@ -36,8 +36,12 @@ function(create_test_pair executable)
     add_test(NAME Test_${executable}_results
       COMMAND ${Python_EXECUTABLE} validate.py
       ${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
+    # Add dependencies to make the test run after Test_${executable}
+    # and run only if that test succeded and created the output files.
     set_tests_properties(Test_${executable}_results PROPERTIES
-      FIXTURES_REQUIRED ST_${executable})
+      FIXTURES_REQUIRED ST_${executable}
+      DEPENDS Test_${executable}
+      REQUIRED_FILES ${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
   endif () # Python_FOUND
 endfunction()
 
