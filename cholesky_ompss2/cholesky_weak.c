@@ -33,19 +33,20 @@ void cholesky(const size_t nblocks,
 	const size_t blocks_per_node = nblocks / numNodes;
 
 	for (size_t i = 0; i < nblocks; ++i) {
+
 		int nodei = i / blocks_per_node;
 
 		#pragma oss task weakinout(A[i][i][0;bsize][0;bsize])	\
 			node(nodei) label("weak_potrf")
 		{
-			oss_potrf(bsize, A[i][i], i);    // Diagonal Block Factorization
+			oss_potrf(bsize, A[i][i], i);              // Diagonal Block Factorization
 		}
 
 		#pragma oss task weakin(A[i][i][0;bsize][0;bsize])		\
 			weakinout(A[i][i+1:nblocks-1][0;bsize][0;bsize])	\
 			node(nodei) label("weak_trsm")
 		{
-			for (size_t j = i + 1; j < nblocks; ++j)      // Triangular Systems
+			for (size_t j = i + 1; j < nblocks; ++j)   // Triangular Systems
 				oss_trsm(bsize, A[i][i], A[i][j]);
 		}
 

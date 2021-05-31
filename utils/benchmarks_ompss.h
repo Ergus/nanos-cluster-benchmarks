@@ -59,8 +59,8 @@ extern "C" {
 
 	void __print_task(const double * const mat,
 	                  const size_t rows, const size_t cols,
-	                  const char prefix[64], const char name[64])
-	{
+	                  const char prefix[64], const char name[64]
+	) {
 		#pragma oss task in(mat[0; rows * cols]) label("matrix_print")
 		{
 			__print(mat, rows, cols, prefix, name);

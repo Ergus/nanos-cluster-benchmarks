@@ -37,6 +37,7 @@
 #include "cmacros/macros.h"
 #include "mkl.h"
 
+#include <nanos6.h>
 #include <nanos6/debug.h>
 
 //############## Blas wrappers #####################
