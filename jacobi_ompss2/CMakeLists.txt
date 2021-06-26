@@ -56,15 +56,16 @@ add_test(NAME Test_${EXECUTABLE}
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
 
 # jacobi serial
-set(EXECUTABLE "${TEST}_serial")
-message("- Add benchmark: ${EXECUTABLE}")
+if (NOT WITH_SERIAL)
+  set(EXECUTABLE "${TEST}_serial")
+  message("- Add benchmark: ${EXECUTABLE}")
 
-add_executable(${EXECUTABLE} jacobi_serial.c)
-target_link_libraries(${EXECUTABLE} argparser base)
+  add_executable(${EXECUTABLE} jacobi_serial.c)
+  target_link_libraries(${EXECUTABLE} argparser base)
 
-add_test(NAME Test_jacobi_serial
-  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
-
+  add_test(NAME Test_jacobi_serial
+    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+endif ()
 
 # install (copy) scripts
 # Submit

@@ -26,6 +26,7 @@ option(WITH_NAMESPACE "Build tests for namespace code" true)
 option(WITH_ASAN "Build tests with address sanitizer" false)
 option(WITH_EXTRAE "Build with Extrae traces support" false)
 option(WITH_KEEP "Keep mcc intermediate files" false)
+option(WITH_SERIAL "Build serial version of the code when available." false)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
