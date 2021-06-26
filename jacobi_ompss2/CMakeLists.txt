@@ -30,8 +30,8 @@ add_custom_command(
 
 add_library(base STATIC libbase.o)
 
-SET(FETCHLIST nofetch fetchall fetchfirst)
-foreach (FETCHTASK 0;1;2)
+SET(FETCHLIST nofetch fetchall)
+foreach (FETCHTASK 0;1)
   list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
 
   set(EXECUTABLE "${TEST}_${FETCHSUFIX}")

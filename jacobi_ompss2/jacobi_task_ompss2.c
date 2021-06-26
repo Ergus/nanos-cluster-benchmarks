@@ -23,8 +23,6 @@
 #define THECOND 0
 #elif FETCHTASK == 1
 #define THECOND 1
-#elif FETCHTASK == 2
-#define THECOND it < 1
 #else  // FETCHTASK
 #error FETCHTASK value not valid.
 #endif // FETCHTASK
