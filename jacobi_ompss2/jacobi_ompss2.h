@@ -24,12 +24,7 @@ extern "C" {
 
 #include "benchmarks_ompss.h"
 
-	void free_matrix(double *mat, size_t size)
-	{
-		nanos6_dfree(mat, size * sizeof(double));
-	}
-
-	extern void jacobi_base(
+	void jacobi_base(
 		const double * __restrict__ A,
 		double Bi,
 		const double * __restrict__ xin,
@@ -47,7 +42,6 @@ extern "C" {
 			inst_event(9910002, 0);
 		}
 	}
-
 
 #ifdef __cplusplus
 }

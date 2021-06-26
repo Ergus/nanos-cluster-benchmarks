@@ -266,10 +266,10 @@ int main(int argc, char* argv[])
 		#pragma oss taskwait
 	}
 
-	free_matrix(A, ROWS * ROWS);
-	free_matrix(B, ROWS);
-	free_matrix(x1, ROWS);
-	free_matrix(x2, ROWS);
+	nanos6_dfree(A, ROWS * ROWS * sizeof(double));
+	nanos6_dfree(B, ROWS * sizeof(double));
+	nanos6_dfree(x1, ROWS * sizeof(double));
+	nanos6_dfree(x2, ROWS * sizeof(double));
 
 	create_reportable_int("worldsize", nanos6_get_num_cluster_nodes());
 	create_reportable_int("cpu_count", nanos6_get_num_cpus());
