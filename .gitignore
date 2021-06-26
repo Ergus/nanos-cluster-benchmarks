@@ -3,4 +3,5 @@ GPATH
 GRTAGS
 GTAGS
 results_*
+.clangd
 compile_commands.json
