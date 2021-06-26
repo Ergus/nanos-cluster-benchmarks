@@ -24,131 +24,30 @@ extern "C" {
 
 #include "benchmarks_ompss.h"
 
-	void init_AB(double *A, double *B, const size_t dim, size_t ts)
-	{
-		const size_t numNodes = nanos6_get_num_cluster_nodes();
-		myassert(dim >= ts);
-		myassert(dim / ts >= numNodes);
-		modcheck(dim, ts);
-		modcheck(dim / numNodes, ts);
-
-		const size_t rowsPerNode = dim / numNodes;
-
-		for (size_t i = 0; i < dim; i += rowsPerNode) { // loop nodes
-
-			const int nodeid = i / rowsPerNode;
-
-			#pragma oss task weakout(A[i * dim; rowsPerNode * dim])	\
-				weakout(B[i; rowsPerNode])							\
-				node(nodeid) wait label("init_AB_weak")
-			{
-				for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
-
-					#pragma oss task out(A[j * dim; ts * dim])			\
-						out(B[j; ts])									\
-						node(nanos6_cluster_no_offload) label("init_AB_strong")
-					{
-						struct drand48_data drand_buf;
-						srand48_r(j, &drand_buf);
-						double x;
-
-						for (size_t k = j; k < j + ts; ++k) {
-							double cum = 0.0, sum = 0.0;
-							for (size_t l = 0; l < dim; ++l) {
-								drand48_r(&drand_buf, &x);
-								A[k * dim + l] = x;
-								cum += fabs(x);
-								sum += x;
-							}
-							// Diagonal element condition.
-							const double valkk = A[k * dim + k];
-							if (signbit(valkk)) {
-								A[k * dim + k] = valkk - cum;
-								B[k] = sum - cum;
-							} else {
-								A[k * dim + k] = valkk + cum;
-								B[k] = sum + cum;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	void init_x(double *x, const size_t dim, size_t ts, double val)
-	{
-		const size_t numNodes = nanos6_get_num_cluster_nodes();
-		myassert(dim >= ts);
-		modcheck(dim, ts);
-
-		const size_t rowsPerNode = dim / numNodes;
-
-		for (size_t i = 0; i < dim; i += rowsPerNode) { // loop nodes
-
-			int nodeid = i / rowsPerNode;
-
-			#pragma oss task weakout(x[i; rowsPerNode])		\
-				node(nodeid) wait label("init_vec_weak")
-			{
-				for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
-
-					#pragma oss task out(x[j; ts])						\
-						node(nanos6_cluster_no_offload) label("init_vec_strong")
-					{
-						for (size_t k = j; k < j + ts; ++k) {
-							x[k] = val;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	void jacobi_modify(double *A, double *b, size_t dim, size_t ts)
-	{
-		const size_t numNodes = nanos6_get_num_cluster_nodes();
-		myassert(dim >= ts);
-		modcheck(dim, ts);
-
-		const size_t rowsPerNode = dim / numNodes;
-
-		for (size_t i = 0; i < dim; i += rowsPerNode) { // loop nodes
-
-			int nodeid = i / rowsPerNode;
-
-			#pragma oss task weakinout(A[i * dim; rowsPerNode * dim])	\
-				weakinout(b[i; rowsPerNode])							\
-				node(nodeid) wait label("jacobi_modify_weak")
-			{
-				for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
-
-					#pragma oss task inout(A[j * dim; ts * dim])		\
-						inout(b[j; ts])									\
-						node(nanos6_cluster_no_offload) label("jacobi_modify_strong")
-					{
-						for (size_t k = j; k < j + ts; ++k) {
-							const double Akk = fabs(A[k * dim + k]);
-
-							for (size_t l = 0; l < dim; ++l) {
-								if (l == k) {
-									A[k * dim + l] = 0;
-								} else {
-									A[k * dim + l] = - (A[k * dim + l] /  Akk);
-								}
-							}
-							b[k] /= Akk;
-						}
-					}
-				}
-			}
-		}
-	}
-
 	void free_matrix(double *mat, size_t size)
 	{
 		nanos6_dfree(mat, size * sizeof(double));
 	}
+
+	extern void jacobi_base(
+		const double * __restrict__ A,
+		double Bi,
+		const double * __restrict__ xin,
+		double * __restrict__ xouti, size_t dim
+	);
+
+	void jacobi(const double *A, const double *B,
+	            const double *xin, double *xout, size_t ts, size_t dim
+	) {
+		for (size_t i = 0; i < ts; ++i) {
+			inst_event(9910002, dim);
+
+			jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
+
+			inst_event(9910002, 0);
+		}
+	}
+
 
 #ifdef __cplusplus
 }

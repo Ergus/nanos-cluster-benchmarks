@@ -37,7 +37,7 @@ foreach (FETCHTASK 0;1;2)
   set(EXECUTABLE "${TEST}_${FETCHSUFIX}")
   message("- Add benchmark: ${EXECUTABLE}")
 
-  add_executable(${EXECUTABLE} jacobi_ompss2.c)
+  add_executable(${EXECUTABLE} jacobi_task_ompss2.c)
   target_compile_definitions(${EXECUTABLE} PUBLIC -DFETCHTASK=${FETCHTASK})
   target_link_libraries(${EXECUTABLE} argparser base)
 
@@ -45,12 +45,26 @@ foreach (FETCHTASK 0;1;2)
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
 endforeach ()
 
+# jacobi taskfor
+set(EXECUTABLE "${TEST}_taskfor")
+message("- Add benchmark: ${EXECUTABLE}")
+
+add_executable(${EXECUTABLE} jacobi_taskfor_ompss2.c)
+target_link_libraries(${EXECUTABLE} argparser base)
+
+add_test(NAME Test_${EXECUTABLE}
+  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+
 # jacobi serial
-add_executable(jacobi_serial jacobi_serial.c)
-target_link_libraries(jacobi_serial argparser base)
+set(EXECUTABLE "${TEST}_serial")
+message("- Add benchmark: ${EXECUTABLE}")
+
+add_executable(${EXECUTABLE} jacobi_serial.c)
+target_link_libraries(${EXECUTABLE} argparser base)
 
 add_test(NAME Test_jacobi_serial
-  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_serial 128 8 3)
+  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+
 
 # install (copy) scripts
 # Submit

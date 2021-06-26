@@ -15,6 +15,10 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+#include "jacobi_ompss2.h"
+
+#ifdef FETCHTASK
 #if FETCHTASK == 0
 #define THECOND 0
 #elif FETCHTASK == 1
@@ -24,28 +28,130 @@
 #else  // FETCHTASK
 #error FETCHTASK value not valid.
 #endif // FETCHTASK
+#else
+#error Not FETCHTASK or FETCHTASKFOR defined.
+#endif
 
-#include "jacobi_ompss2.h"
+void init_AB_task(double *A, double *B, const size_t dim, size_t ts)
+{
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+	myassert(dim >= ts);
+	myassert(dim / ts >= numNodes);
+	modcheck(dim, ts);
+	modcheck(dim / numNodes, ts);
 
-extern void jacobi_base(
-	const double * __restrict__ A,
-	double Bi,
-	const double * __restrict__ xin,
-	double * __restrict__ xouti, size_t dim
-);
+	const size_t rowsPerNode = dim / numNodes;
 
-void jacobi(const double *A, const double *B,
-            const double *xin, double *xout, size_t ts, size_t dim
-) {
-	for (size_t i = 0; i < ts; ++i) {
-		inst_event(9910002, dim);
+	for (size_t i = 0; i < dim; i += rowsPerNode) { // loop nodes
 
-		jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
+		const int nodeid = i / rowsPerNode;
 
-		inst_event(9910002, 0);
+		#pragma oss task weakout(A[i * dim; rowsPerNode * dim])	\
+			weakout(B[i; rowsPerNode])							\
+			node(nodeid) wait label("init_AB_weak")
+		{
+			for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
+
+				#pragma oss task out(A[j * dim; ts * dim])			\
+					out(B[j; ts])									\
+					node(nanos6_cluster_no_offload) label("init_AB_strong")
+				{
+					for (size_t k = j; k < j + ts; ++k) {
+						struct drand48_data drand_buf;
+						srand48_r(k, &drand_buf);
+						double x;
+
+						double cum = 0.0, sum = 0.0;
+						for (size_t l = 0; l < dim; ++l) {
+							drand48_r(&drand_buf, &x);
+							A[k * dim + l] = x;
+							cum += fabs(x);
+							sum += x;
+						}
+						// Diagonal element condition.
+						const double valkk = A[k * dim + k];
+						if (signbit(valkk)) {
+							A[k * dim + k] = valkk - cum;
+							B[k] = sum - cum;
+						} else {
+							A[k * dim + k] = valkk + cum;
+							B[k] = sum + cum;
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
+void init_x_task(double *x, const size_t dim, size_t ts, double val)
+{
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+	myassert(dim >= ts);
+	modcheck(dim, ts);
+
+	const size_t rowsPerNode = dim / numNodes;
+
+	for (size_t i = 0; i < dim; i += rowsPerNode) { // loop nodes
+
+		int nodeid = i / rowsPerNode;
+
+		#pragma oss task weakout(x[i; rowsPerNode])		\
+			node(nodeid) wait label("init_vec_weak")
+		{
+			for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
+
+				#pragma oss task out(x[j; ts])						\
+					node(nanos6_cluster_no_offload) label("init_vec_strong")
+				{
+					for (size_t k = j; k < j + ts; ++k) {
+						x[k] = val;
+					}
+				}
+			}
+		}
+	}
+}
+
+void jacobi_modify_task(double *A, double *b, size_t dim, size_t ts)
+{
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
+	myassert(dim >= ts);
+	modcheck(dim, ts);
+
+	const size_t rowsPerNode = dim / numNodes;
+
+	for (size_t i = 0; i < dim; i += rowsPerNode) { // loop nodes
+
+		int nodeid = i / rowsPerNode;
+
+		#pragma oss task weakinout(A[i * dim; rowsPerNode * dim])	\
+			weakinout(b[i; rowsPerNode])							\
+			node(nodeid) wait label("jacobi_modify_weak")
+		{
+			for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
+
+				#pragma oss task inout(A[j * dim; ts * dim])		\
+					inout(b[j; ts])									\
+					node(nanos6_cluster_no_offload) label("jacobi_modify_strong")
+				{
+					for (size_t k = j; k < j + ts; ++k) {
+						const double Akk = fabs(A[k * dim + k]);
+
+						for (size_t l = 0; l < dim; ++l) {
+							if (l == k) {
+								A[k * dim + l] = 0;
+							} else {
+								A[k * dim + l] = - (A[k * dim + l] /  Akk);
+							}
+						}
+						b[k] /= Akk;
+					}
+				}
+			}
+		}
+	}
+}
 
 void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
                   size_t ts, size_t dim, size_t it
@@ -60,6 +166,13 @@ void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
 	const size_t rowsPerNode = dim / numNodes;
 	myassert(ts <= rowsPerNode);
 	modcheck(rowsPerNode, ts);
+
+	#pragma oss task weakinout(xin[0; dim]) \
+		weakinout(xout[0; dim]) \
+		node(0) wait label("trick")
+	{
+	}
+
 
 	for (size_t i = 0; i < dim; i += rowsPerNode) {
 
@@ -121,11 +234,11 @@ int main(int argc, char* argv[])
 	double *x2 = nanos6_dmalloc(ROWS * sizeof(double),
 	                            nanos6_equpart_distribution, 0, NULL);
 
-	init_AB(A, B, ROWS, TS);
-	jacobi_modify(A, B, ROWS, TS);
+	init_AB_task(A, B, ROWS, TS);
+	jacobi_modify_task(A, B, ROWS, TS);
 
-	init_x(x1, ROWS, TS, 0.0);
-	init_x(x2, ROWS, TS, 0.0);
+	init_x_task(x1, ROWS, TS, 0.0);
+	init_x_task(x2, ROWS, TS, 0.0);
 
 	#pragma oss taskwait
 
