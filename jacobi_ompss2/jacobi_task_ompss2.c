@@ -55,11 +55,11 @@ void init_AB_task(double *A, double *B, const size_t dim, size_t ts)
 					node(nanos6_cluster_no_offload) label("init_AB_strong")
 				{
 					for (size_t k = j; k < j + ts; ++k) {
+
 						struct drand48_data drand_buf;
 						srand48_r(k, &drand_buf);
-						double x;
+						double cum = 0.0, sum = 0.0, x;
 
-						double cum = 0.0, sum = 0.0;
 						for (size_t l = 0; l < dim; ++l) {
 							drand48_r(&drand_buf, &x);
 							A[k * dim + l] = x;
@@ -84,15 +84,15 @@ void init_AB_task(double *A, double *B, const size_t dim, size_t ts)
 
 void init_x_task(double *x, const size_t dim, size_t ts, double val)
 {
-	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(dim >= ts);
 	modcheck(dim, ts);
+	const size_t numNodes = nanos6_get_num_cluster_nodes();
 
 	const size_t rowsPerNode = dim / numNodes;
 
 	for (size_t i = 0; i < dim; i += rowsPerNode) { // loop nodes
 
-		int nodeid = i / rowsPerNode;
+		const int nodeid = i / rowsPerNode;
 
 		#pragma oss task weakout(x[i; rowsPerNode])		\
 			node(nodeid) wait label("init_vec_weak")
@@ -134,16 +134,13 @@ void jacobi_modify_task(double *A, double *b, size_t dim, size_t ts)
 					node(nanos6_cluster_no_offload) label("jacobi_modify_strong")
 				{
 					for (size_t k = j; k < j + ts; ++k) {
-						const double Akk = fabs(A[k * dim + k]);
+						const double iAkk = 1 / fabs(A[k * dim + k]);
 
 						for (size_t l = 0; l < dim; ++l) {
-							if (l == k) {
-								A[k * dim + l] = 0;
-							} else {
-								A[k * dim + l] = - (A[k * dim + l] /  Akk);
-							}
+							A[k * dim + l]
+								= (l == k) ? 0.0 : -1.0 * A[k * dim + l] * iAkk;
 						}
-						b[k] /= Akk;
+						b[k] *= iAkk;
 					}
 				}
 			}
@@ -170,7 +167,6 @@ void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
 		node(0) wait label("trick")
 	{
 	}
-
 
 	for (size_t i = 0; i < dim; i += rowsPerNode) {
 

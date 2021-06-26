@@ -154,8 +154,11 @@ void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
 				out(xout[i; rowsPerNode])								\
 				firstprivate(ts) chunksize(ts) label("jacobi_taskfor")
 			for (size_t j = i; j < i + rowsPerNode; ++j) {
-				(void) ts;
-				jacobi(&A[j * dim], &B[j], xin, &xout[j], 1, dim);
+				inst_event(9910002, dim);
+
+				jacobi_base(&A[j * dim], B[j], xin, &xout[j], dim);
+
+				inst_event(9910002, 0);
 			}
 		}
 	}
