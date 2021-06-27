@@ -47,7 +47,7 @@ extern "C" {
 	EVENT(BLAS_SYRK)
 
 enum blas_values_t {
-#define BLAS_EVENT(evt) evt,
+#define EVENT(evt) evt,
 	BLAS_EVENT_VALUES
 #undef EVENT
 	BLAS_NEVENTS
@@ -69,7 +69,6 @@ void register_blas_events()
 #define EVENT(evt) #evt,
 		BLAS_EVENT_VALUES
 #undef EVENT
-		"OVERFLOW"
 	};
 
 	inst_define_event_type(&event, "blas_event", &nvalues, blas_values, blas_names);
