@@ -56,7 +56,7 @@ add_test(NAME Test_${EXECUTABLE}
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
 
 # jacobi serial
-if (NOT WITH_SERIAL)
+if (WITH_SERIAL)
   set(EXECUTABLE "${TEST}_serial")
   message("- Add benchmark: ${EXECUTABLE}")
 
