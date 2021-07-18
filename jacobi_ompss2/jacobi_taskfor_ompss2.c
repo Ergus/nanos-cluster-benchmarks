@@ -31,8 +31,8 @@ void init_AB_taskfor(double *A, double *B, const size_t dim, size_t ts)
 
 		const int nodeid = i / rowsPerNode;
 
-		#pragma oss task weakout(A[i * dim; rowsPerNode * dim])	\
-			weakout(B[i; rowsPerNode])							\
+		#pragma oss task weakout(A[i * dim; rowsPerNode * dim])			\
+			weakout(B[i; rowsPerNode])									\
 			firstprivate(ts) node(nodeid) wait label("init_AB_weak")
 		{
 			#pragma oss task for out(A[i * dim; rowsPerNode * dim])		\
@@ -77,11 +77,11 @@ void init_x_taskfor(double *x, const size_t dim, size_t ts, double val)
 
 		int nodeid = i / rowsPerNode;
 
-		#pragma oss task weakout(x[i; rowsPerNode])		\
-			node(nodeid)								\
+		#pragma oss task weakout(x[i; rowsPerNode])			\
+			node(nodeid)									\
 			firstprivate(ts) wait label("init_vec_weak")
 		{
-			#pragma oss task for out(x[i; rowsPerNode]) \
+			#pragma oss task for out(x[i; rowsPerNode])					\
 				firstprivate(ts) chunksize(ts) label("init_vec_taskfor")
 			for (size_t j = i; j < i + rowsPerNode; ++j) { // loop tasks
 				x[j] = val;
@@ -124,7 +124,7 @@ void jacobi_modify_taskfor(double *A, double *b, size_t dim, size_t ts)
 
 
 void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
-                  size_t ts, size_t dim, size_t it
+                    size_t ts, size_t dim, size_t it
 ) {
 	if (it == 0)
 		printf("# matvec_taskfor TASKFOR\n");
@@ -137,6 +137,10 @@ void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
 	myassert(ts <= rowsPerNode);
 	modcheck(rowsPerNode, ts);
 
+	#pragma oss task inout(xin[0; dim]) node(0) label("trick2")
+	{
+	}
+
 	for (int i = 0; i < dim; i += rowsPerNode) {
 
 		const int nodeid = i / rowsPerNode;
@@ -146,7 +150,7 @@ void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
 			weakin(B[i; rowsPerNode])									\
 			weakout(xout[i; rowsPerNode])								\
 			node(nodeid)												\
-			firstprivate(ts) wait label("weakjacobi")
+			firstprivate(ts) wait label("weakjacobi_taskfor")
 		{
 			#pragma oss task for in(A[i * dim; rowsPerNode * dim])	\
 				in(xin[0; dim])											\
