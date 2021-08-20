@@ -217,10 +217,14 @@ void cholesky_single(const size_t nt, const size_t ts,
 	} // for k
 }
 
+#if TYPEID == 0
+
 void cholesky_ompss2(const size_t nt, const size_t ts,
                      double A[nt][nt][ts][ts],
                      int block_rank[nt][nt]
 ) {
+	printf("# cholesky weak\n");
+
 	for (size_t k = 0; k < nt; ++k) {
 
 		int nodekk = block_rank[k][k];
@@ -279,6 +283,55 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 	} // for k
 }
 
+#elif TYPEID == 1
+
+void cholesky_ompss2(const size_t nt, const size_t ts,
+                     double A[nt][nt][ts][ts],
+                     int block_rank[nt][nt]
+) {
+	printf("# cholesky strong\n");
+
+	for (size_t k = 0; k < nt; ++k) {
+
+		int nodekk = block_rank[k][k];
+
+		#pragma oss task inout(A[k][k][0;ts][0;ts]) \
+			node(nodekk) label("potrf")
+		oss_potrf(ts, A[k][k]);
+
+		for (size_t i = k + 1; i < nt; ++i) {
+			int nodeki = block_rank[k][i];
+
+			#pragma oss task in(A[k][k][0;ts][0;ts])	\
+				inout(A[k][i][0;ts][0;ts])				\
+				node(nodeki) label("trsm")
+			oss_trsm(ts, A[k][k], A[k][i]);
+		}
+
+		for (size_t i = k + 1; i < nt; ++i) {
+			for (size_t j = k + 1; j < i; ++j) {
+				int nodeji = block_rank[j][i];
+
+				#pragma oss task in(A[k][i][0;ts][0;ts])			\
+					in(A[k][j][0;ts][0;ts])							\
+					inout(A[j][i][0;ts][0;ts])						\
+					node(nodeji) label("gemm")
+				oss_gemm(ts, A[k][i], A[k][j], A[j][i]);
+			}
+
+			int nodeii = block_rank[i][i];
+
+			#pragma oss task in(A[k][i][0;ts][0;ts])		\
+				inout(A[i][i][0;ts][0;ts])					\
+				node(nodeii) label("syrk")
+			oss_syrk(ts, A[k][i], A[i][i]);
+		} // for i
+	} // for k
+}
+
+#else  // TYPE
+#error Cholesky type value not valid.
+#endif // TYPE
 
 int main(int argc, char *argv[])
 {
@@ -311,6 +364,8 @@ int main(int argc, char *argv[])
 		                     nanos6_equpart_distribution, 0, NULL);
 		assert(Ans != NULL);
 	}
+
+	#pragma oss taskwait
 
 	cholesky_init_task(nt, TS, A, Ans, block_rank);
 	#pragma oss taskwait

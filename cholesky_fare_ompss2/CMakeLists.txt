@@ -29,13 +29,25 @@ find_path(
 # Add the executables and link
 include_directories(${MKL_INCLUDE_DIR})
 
-set(executable "cholesky_fare_ompss2")
+SET(TESTTYPE weak strong)
+foreach (TYPEID 0;1)
+  list(GET TESTTYPE ${TYPEID} TYPE)
+  set(executable "cholesky_fare_${TYPE}_ompss2")
 
-message("- Add benchmark: ${EXECUTABLE}")
+  message("- Add benchmark: ${executable}")
 
-add_executable(${executable} ${executable}.c)
-target_link_options(${executable} PUBLIC ${BLAS_LINKER_FLAGS})
-target_link_libraries(${executable} ${BLAS_LIBRARIES} argparser)
+  add_executable(${executable} cholesky_fare_ompss2.c)
+  target_compile_definitions(${executable} PUBLIC -DTYPEID=${TYPEID})
+  target_link_options(${executable} PUBLIC ${BLAS_LINKER_FLAGS})
+  target_link_libraries(${executable} ${BLAS_LIBRARIES} argparser)
+
+  add_test(NAME Test_${executable}
+    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16)
+  # Create FIXTURES_SETUP for Test_${executable}
+  set_tests_properties(Test_${executable} PROPERTIES
+    ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+
+endforeach ()
 
 # submiter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
