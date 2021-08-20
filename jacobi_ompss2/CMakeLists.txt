@@ -43,6 +43,8 @@ foreach (FETCHTASK 0;1)
 
   add_test(NAME Test_${EXECUTABLE}
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+  set_tests_properties(Test_${EXECUTABLE} PROPERTIES
+    ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
 endforeach ()
 
 # jacobi taskfor
