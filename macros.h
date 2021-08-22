@@ -116,8 +116,8 @@ extern "C" {
 #define printmatrix(mat, rows, cols, prefix) \
 	__print(mat, rows, cols, prefix, #mat)
 
-	inline void block_init(double * const __restrict__ array,
-	                       const size_t rows, const size_t cols, int seed
+	static inline void block_init(double * const __restrict__ array,
+	                              const size_t rows, const size_t cols, int seed
 	) {
 		const size_t fullsize = rows * cols;
 
@@ -131,7 +131,7 @@ extern "C" {
 		}
 	}
 
-	inline int count_sched_cpus()
+	static inline int count_sched_cpus()
 	{
 		cpu_set_t mask;
 		if (sched_getaffinity(0, sizeof(mask), &mask) == 0)
