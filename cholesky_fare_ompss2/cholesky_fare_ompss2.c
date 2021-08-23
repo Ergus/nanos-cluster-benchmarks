@@ -209,8 +209,8 @@ void cholesky_single(const size_t nt, const size_t ts,
 				oss_gemm(ts, A[k][i], A[k][j], A[j][i]);
 			}
 
-			#pragma oss task task in(A[k][i][0;ts][0;ts])			\
-				inout(A[i][i][0;ts][0;ts])							\
+			#pragma oss task in(A[k][i][0;ts][0;ts])					\
+				inout(A[i][i][0;ts][0;ts])								\
 				node(nanos6_cluster_no_offload) label("single_syrk")
 			oss_syrk(ts, A[k][i], A[i][i]);
 		} // for i
