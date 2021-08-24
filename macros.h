@@ -37,8 +37,12 @@ extern "C" {
 
 #ifdef _OPENMP
 #include <omp.h>
-#else
-#pragma GCC warning "Compiling without OpenMP"
+#else // _OPENMP
+
+#ifndef _OMPSS_2
+#warning "Compiling without OpenMP or OmpSs"
+#endif // _OMPSS_2
+
 #define omp_get_thread_num() 0
 #define omp_set_num_threads(var) {}
 #define omp_set_dynamic(NUM)
@@ -46,7 +50,7 @@ extern "C" {
 
 #define omp_set_schedule(...)
 #define omp_sched_static
-#endif
+#endif // _OPENMP
 
 #define imin(x, y) (((x) < (y)) ? (x) : (y))
 #define imax(x, y) (((x) > (y)) ? (x) : (y))
