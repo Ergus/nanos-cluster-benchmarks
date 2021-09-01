@@ -224,6 +224,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
                      int block_rank[nt][nt]
 ) {
 	printf("# cholesky weak\n");
+	const size_t np = nanos6_get_num_cluster_nodes();
 
 	for (size_t k = 0; k < nt; ++k) {
 
@@ -237,50 +238,66 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 			oss_potrf(ts, A[k][k]);
 		}
 
-		for (size_t i = k + 1; i < nt; ++i) {
-			int nodeki = block_rank[k][i];
+		// Order by block_rank
+		for(size_t v = 0; v < np; v++) {
+			size_t p = np-1-v;
 
-			#pragma oss task weakin(A[k][k][0;ts][0;ts])	\
-				weakinout(A[k][i][0;ts][0;ts])				\
-				node(nodeki) label("weak_trsm")
-			{
-				#pragma oss task in(A[k][k][0;ts][0;ts])	\
-					inout(A[k][i][0;ts][0;ts])				\
-					node(nanos6_cluster_no_offload) label("trsm")
-				oss_trsm(ts, A[k][k], A[k][i]);
+			for (size_t i = k + 1; i < nt; ++i) {
+				int nodeki = block_rank[k][i];
+				if (nodeki == p) {
+
+					#pragma oss task weakin(A[k][k][0;ts][0;ts])	\
+						weakinout(A[k][i][0;ts][0;ts])				\
+						node(nodeki) label("weak_trsm")
+					{
+						#pragma oss task in(A[k][k][0;ts][0;ts])	\
+							inout(A[k][i][0;ts][0;ts])				\
+							node(nanos6_cluster_no_offload) label("trsm")
+						oss_trsm(ts, A[k][k], A[k][i]);
+					}
+				}
 			}
 		}
 
-		for (size_t i = k + 1; i < nt; ++i) {
-			for (size_t j = k + 1; j < i; ++j) {
-				int nodeji = block_rank[j][i];
+		// Order by block_rank
+		for(size_t v = 0; v < np; v++) {
+			size_t p = np-1-v;
 
-				#pragma oss task weakin(A[k][i][0;ts][0;ts])		\
-					weakin(A[k][j][0;ts][0;ts])						\
-					weakinout(A[j][i][0;ts][0;ts])					\
-					node(nodeji) label("weak_gemm")
-				{
-					#pragma oss task in(A[k][i][0;ts][0;ts])		\
-						in(A[k][j][0;ts][0;ts])						\
-						inout(A[j][i][0;ts][0;ts])					\
-						node(nanos6_cluster_no_offload) label("gemm")
-					oss_gemm(ts, A[k][i], A[k][j], A[j][i]);
+			for (size_t i = k + 1; i < nt; ++i) {
+				for (size_t j = k + 1; j < i; ++j) {
+					int nodeji = block_rank[j][i];
+					if (nodeji == p) {
+
+						#pragma oss task weakin(A[k][i][0;ts][0;ts])		\
+							weakin(A[k][j][0;ts][0;ts])						\
+							weakinout(A[j][i][0;ts][0;ts])					\
+							node(nodeji) label("weak_gemm")
+						{
+							#pragma oss task in(A[k][i][0;ts][0;ts])		\
+								in(A[k][j][0;ts][0;ts])						\
+								inout(A[j][i][0;ts][0;ts])					\
+								node(nanos6_cluster_no_offload) label("gemm")
+							oss_gemm(ts, A[k][i], A[k][j], A[j][i]);
+						}
+					}
+				} // for j
+
+				int nodeii = block_rank[i][i];
+				if (nodeii == p) {
+
+					#pragma oss task weakin(A[k][i][0;ts][0;ts])	\
+						weakinout(A[i][i][0;ts][0;ts])				\
+						node(nodeii) label("weak_syrk")
+					{
+						#pragma oss task in(A[k][i][0;ts][0;ts])	\
+							inout(A[i][i][0;ts][0;ts])				\
+							node(nanos6_cluster_no_offload) label("syrk")
+						oss_syrk(ts, A[k][i], A[i][i]);
+					}
 				}
-			}
-
-			int nodeii = block_rank[i][i];
-
-			#pragma oss task weakin(A[k][i][0;ts][0;ts])	\
-				weakinout(A[i][i][0;ts][0;ts])				\
-				node(nodeii) label("weak_syrk")
-			{
-				#pragma oss task in(A[k][i][0;ts][0;ts])	\
-					inout(A[i][i][0;ts][0;ts])				\
-					node(nanos6_cluster_no_offload) label("syrk")
-				oss_syrk(ts, A[k][i], A[i][i]);
-			}
-		} // for i
-	} // for k
+			} // for i
+		} // for k
+	} // for v
 }
 
 #elif TYPEID == 1
