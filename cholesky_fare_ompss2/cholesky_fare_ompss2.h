@@ -32,8 +32,16 @@ extern "C" {
 #include <mkl.h>
 #include <mpi.h>
 #include <omp.h>
+#include <extrae.h>
 
 #include "benchmarks_ompss.h"
+
+#define PRVANIM_NONE 0
+#define PRVANIM_POTRF 1
+#define PRVANIM_TRSM 2
+#define PRVANIM_GEMM 3
+#define PRVANIM_SYRK 4
+#define PRVANIM_EVENT 9200042
 
 #if __WITH_EXTRAE
 
@@ -74,10 +82,34 @@ void register_blas_events()
 	inst_define_event_type(&event, "blas_event", &nvalues, blas_values, blas_names);
 }
 
+void inst_prvanim(int kernel, int k, int y, int x)
+{
+	nanos6_instrument_event(PRVANIM_EVENT, kernel);
+	nanos6_instrument_event(PRVANIM_EVENT, k + 1000000);
+	nanos6_instrument_event(PRVANIM_EVENT, y + 2000000);
+	nanos6_instrument_event(PRVANIM_EVENT, x + 3000000);
+}
+
+void register_prvanim_events()
+{
+	// extrae_type_t event = PRVANIM_KERNEL;
+	// unsigned int nvalues = 0;
+	// inst_define_event_type(&event, "prvanim kernel", &nvalues, NULL, NULL);
+	// event = PRVANIM_K;
+	// inst_define_event_type(&event, "prvanim k", &nvalues, NULL, NULL);
+	// event = PRVANIM_Y;
+	// inst_define_event_type(&event, "prvanim y", &nvalues, NULL, NULL);
+	// event = PRVANIM_X;
+	// inst_define_event_type(&event, "prvanim x", &nvalues, NULL, NULL);
+}
+
+
 #else // __WITH_EXTRAE
 
 #define BLAS_EVENT 0
 #define register_blas_events()
+#define register_prvanim_events()
+#define inst_prvanim(kernel, k, y, x)
 
 #endif // __WITH_EXTRAE
 
@@ -91,8 +123,11 @@ void dsyrk_(char *uplo, char *trans, int *n, int *k, double *alpha, double *a, i
 	double *beta, double *c, int *ldc);
 
 
-static inline void oss_potrf(int ts, double A[ts][ts])
+static inline void oss_potrf(int ts, double A[ts][ts], int k, int y, int x, int prvanim)
 {
+	if (prvanim) {
+		inst_prvanim(PRVANIM_POTRF, k,y,x);
+	}
 	inst_event(BLAS_EVENT, BLAS_POTRF);
 	assert(A != NULL);
 
@@ -101,13 +136,20 @@ static inline void oss_potrf(int ts, double A[ts][ts])
 
 	dpotrf_(&L, &ts, (double *)A, &ts, &INFO);
 	inst_event(BLAS_EVENT, BLAS_NONE);
+	if (prvanim) {
+		inst_prvanim(PRVANIM_NONE, k,y,x);
+	}
 }
 
-static inline void oss_trsm(int ts, double A[ts][ts], double B[ts][ts])
+static inline void oss_trsm(int ts, double A[ts][ts], double B[ts][ts], int k, int y, int x, int prvanim)
 {
+	if (prvanim) {
+		inst_prvanim(PRVANIM_TRSM, k,y,x);
+	}
 	inst_event(BLAS_EVENT, BLAS_TRSM);
 	assert(A != NULL);
 	assert(B != NULL);
+
 
     char LO = 'L', TR = 'T', NU = 'N', RI = 'R';
     double DONE = 1.0;
@@ -116,14 +158,21 @@ static inline void oss_trsm(int ts, double A[ts][ts], double B[ts][ts])
 	       (double *)B, &ts);
 
 	inst_event(BLAS_EVENT, BLAS_NONE);
+	if (prvanim) {
+		inst_prvanim(PRVANIM_NONE, k,y,x);
+	}
 }
 
 static inline void oss_gemm(
 	int ts,
 	double A[ts][ts],
 	double B[ts][ts],
-	double C[ts][ts]
+	double C[ts][ts],
+	int k, int y, int x, int prvanim
 ) {
+	if (prvanim) {
+		inst_prvanim(PRVANIM_GEMM, k,y,x);
+	}
 	inst_event(BLAS_EVENT, BLAS_GEMM);
 	assert(A != NULL);
 	assert(B != NULL);
@@ -137,10 +186,16 @@ static inline void oss_gemm(
 	       (double *)C, &ts);
 
 	inst_event(BLAS_EVENT, BLAS_NONE);
+	if (prvanim) {
+		inst_prvanim(PRVANIM_NONE, k,y,x);
+	}
 }
 
-static inline void oss_syrk(int ts, double A[ts][ts], double B[ts][ts])
+static inline void oss_syrk(int ts, double A[ts][ts], double B[ts][ts], int k, int y, int x, int prvanim)
 {
+	if (prvanim) {
+		inst_prvanim(PRVANIM_SYRK, k,y,x);
+	}
 	inst_event(BLAS_EVENT, BLAS_SYRK);
 	assert(A != NULL);
 	assert(B != NULL);
@@ -151,6 +206,9 @@ static inline void oss_syrk(int ts, double A[ts][ts], double B[ts][ts])
 	       (double *)A, &ts, &DONE,
 	       (double *)B, &ts);
 	inst_event(BLAS_EVENT, BLAS_NONE);
+	if (prvanim) {
+		inst_prvanim(PRVANIM_NONE, k,y,x);
+	}
 }
 
 static inline void wait(MPI_Request *comm_req)

@@ -191,13 +191,13 @@ void cholesky_single(const size_t nt, const size_t ts,
 	for (size_t k = 0; k < nt; ++k) {
 		#pragma oss task inout(A[k][k][0;ts][0;ts])					\
 			node(nanos6_cluster_no_offload) label("single_potrf")
-		oss_potrf(ts, A[k][k]);
+		oss_potrf(ts, A[k][k], k,k,k,0);
 
 		for (size_t i = k + 1; i < nt; ++i) {
 			#pragma oss task in(A[k][k][0;ts][0;ts])			\
 				inout(A[k][i][0;ts][0;ts])								\
 				node(nanos6_cluster_no_offload) label("single_trsm")
-			oss_trsm(ts, A[k][k], A[k][i]);
+			oss_trsm(ts, A[k][k], A[k][i], k,k,i,0);
 		}
 
 		for (size_t i = k + 1; i < nt; ++i) {
@@ -206,13 +206,13 @@ void cholesky_single(const size_t nt, const size_t ts,
 					in(A[k][j][0;ts][0;ts])							\
 					inout(A[j][i][0;ts][0;ts])						\
 					node(nanos6_cluster_no_offload) label("single_gemm")
-				oss_gemm(ts, A[k][i], A[k][j], A[j][i]);
+				oss_gemm(ts, A[k][i], A[k][j], A[j][i], k,j,i,0);
 			}
 
 			#pragma oss task in(A[k][i][0;ts][0;ts])					\
 				inout(A[i][i][0;ts][0;ts])								\
 				node(nanos6_cluster_no_offload) label("single_syrk")
-			oss_syrk(ts, A[k][i], A[i][i]);
+			oss_syrk(ts, A[k][i], A[i][i], k,i,i,0);
 		} // for i
 	} // for k
 }
@@ -221,7 +221,8 @@ void cholesky_single(const size_t nt, const size_t ts,
 
 void cholesky_ompss2(const size_t nt, const size_t ts,
                      double A[nt][nt][ts][ts],
-                     int block_rank[nt][nt]
+                     int block_rank[nt][nt],
+					 int prvanim
 ) {
 	printf("# cholesky weak\n");
 	const size_t np = nanos6_get_num_cluster_nodes();
@@ -235,7 +236,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 		{
 			#pragma oss task inout(A[k][k][0;ts][0;ts]) \
 				node(nanos6_cluster_no_offload) label("potrf")
-			oss_potrf(ts, A[k][k]);
+			oss_potrf(ts, A[k][k], k,k,k, prvanim);
 		}
 
 		// Order by block_rank
@@ -253,7 +254,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 						#pragma oss task in(A[k][k][0;ts][0;ts])	\
 							inout(A[k][i][0;ts][0;ts])				\
 							node(nanos6_cluster_no_offload) label("trsm")
-						oss_trsm(ts, A[k][k], A[k][i]);
+						oss_trsm(ts, A[k][k], A[k][i], k,k,i, prvanim);
 					}
 				}
 			}
@@ -277,7 +278,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 								in(A[k][j][0;ts][0;ts])						\
 								inout(A[j][i][0;ts][0;ts])					\
 								node(nanos6_cluster_no_offload) label("gemm")
-							oss_gemm(ts, A[k][i], A[k][j], A[j][i]);
+							oss_gemm(ts, A[k][i], A[k][j], A[j][i], k,j,i, prvanim);
 						}
 					}
 				} // for j
@@ -292,7 +293,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 						#pragma oss task in(A[k][i][0;ts][0;ts])	\
 							inout(A[i][i][0;ts][0;ts])				\
 							node(nanos6_cluster_no_offload) label("syrk")
-						oss_syrk(ts, A[k][i], A[i][i]);
+						oss_syrk(ts, A[k][i], A[i][i], k,i,i, prvanim);
 					}
 				}
 			} // for i
@@ -304,7 +305,8 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 
 void cholesky_ompss2(const size_t nt, const size_t ts,
                      double A[nt][nt][ts][ts],
-                     int block_rank[nt][nt]
+                     int block_rank[nt][nt],
+					 int prvanim
 ) {
 	printf("# cholesky strong\n");
 
@@ -314,7 +316,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 
 		#pragma oss task inout(A[k][k][0;ts][0;ts]) \
 			node(nodekk) label("potrf")
-		oss_potrf(ts, A[k][k]);
+		oss_potrf(ts, A[k][k],  k,k,k, prvanim);
 
 		for (size_t i = k + 1; i < nt; ++i) {
 			int nodeki = block_rank[k][i];
@@ -322,7 +324,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 			#pragma oss task in(A[k][k][0;ts][0;ts])	\
 				inout(A[k][i][0;ts][0;ts])				\
 				node(nodeki) label("trsm")
-			oss_trsm(ts, A[k][k], A[k][i]);
+			oss_trsm(ts, A[k][k], A[k][i], k,k,i, prvanim);
 		}
 
 		for (size_t i = k + 1; i < nt; ++i) {
@@ -333,7 +335,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 					in(A[k][j][0;ts][0;ts])							\
 					inout(A[j][i][0;ts][0;ts])						\
 					node(nodeji) label("gemm")
-				oss_gemm(ts, A[k][i], A[k][j], A[j][i]);
+				oss_gemm(ts, A[k][i], A[k][j], A[j][i], k,j,i, prvanim);
 			}
 
 			int nodeii = block_rank[i][i];
@@ -341,7 +343,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 			#pragma oss task in(A[k][i][0;ts][0;ts])		\
 				inout(A[i][i][0;ts][0;ts])					\
 				node(nodeii) label("syrk")
-			oss_syrk(ts, A[k][i], A[i][i]);
+			oss_syrk(ts, A[k][i], A[i][i], k, i,i, prvanim);
 		} // for i
 	} // for k
 }
@@ -353,6 +355,7 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 int main(int argc, char *argv[])
 {
 	init_args(argc, argv);
+	register_prvanim_events();
 
 	const char *PREFIX = basename(argv[0]);
 	const int ROWS = create_cl_int("Rows");
@@ -397,7 +400,7 @@ int main(int argc, char *argv[])
 	printf("# Starting warmup\n");
 
 	timer atimer_warmup = create_timer("Warmup_time");
-	cholesky_ompss2(nt, TS, A, block_rank);
+	cholesky_ompss2(nt, TS, A, block_rank, /* prvanim */ false);
 	#pragma oss taskwait
 
 	stop_timer(&atimer_warmup);
@@ -414,7 +417,7 @@ int main(int argc, char *argv[])
 	printf("# Starting algorithm\n");
 
 	timer atimer = create_timer("Algorithm_time");
-	cholesky_ompss2(nt, TS, A, block_rank);
+	cholesky_ompss2(nt, TS, A, block_rank, /* prvanim */ true);
 	#pragma oss taskwait
 
 	stop_timer(&atimer);
