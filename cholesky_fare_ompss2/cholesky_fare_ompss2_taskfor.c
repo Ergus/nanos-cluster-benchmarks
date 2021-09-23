@@ -15,6 +15,7 @@
  * along with this program.	 If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
 #include "cholesky_fare_ompss2_taskfor.h"
 
 struct matrix_info {
@@ -215,6 +216,16 @@ void cholesky_single(
 	} // for k
 }
 
+inline int min(int x, int y)
+{
+	return (x < y) ? x : y;
+}
+
+inline int max(int x, int y)
+{
+	return (x < y) ? y : x;
+}
+
 void cholesky_ompss2(
 	const struct matrix_info *pinfo,
 	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
@@ -233,32 +244,65 @@ void cholesky_ompss2(
 	const size_t pcols = info.pcols;
 	const size_t npcols = info.nt / info.pcols;
 	const size_t blocks_per_node = info.blocks_per_node;
+	int delay[64];
+
+	// Size of each taskfor in terms of the whole matrix (the number
+	// of elements in an actual taskfor is chop / pcols)
+	int chop_size = nt / 2;
+	int num_chops = nt / chop_size;
+
+	assert((chop_size % pcols) == 0); // chop should be a multiple of pcols
 
 	for (size_t k = 0; k < nt; ++k) {
 
 		// POTRF
 		const int nodekk = get_block_node(&info, k, k);
+		int idx_kk = get_block_global_index(&info, k, k);
 		double (*Akk)[ts] = A[ get_block_global_index(&info, k, k) ];
 
 		#pragma oss task weakinout(Akk[0;ts][0;ts])	\
-			node(nodekk) label("weak_potrf") priority(2+nt-1-k)
+			node(nodekk) label("weak_potrf") priority(nt)
 		{
 			#pragma oss task inout(Akk[0;ts][0;ts]) \
-				node(nanos6_cluster_no_offload) label("potrf") priority(nt-1-k)
+				node(nanos6_cluster_no_offload) label("potrf") priority(nt)
 				{
 				 (void)nt;
 				 oss_potrf(ts, Akk, k,k,k, prvanim);
+				// printf("%ld. POTRF on node %d      inout %d\n", k, nodekk, idx_kk);
 				}
 		}
 
 		// Row k trsm
 		// Calculate global start index and size for each node in the k-th row
-		int first_i_n[8], start_p[8], len_p[8];
+		int first_i_n[8], start_p[8], len_p[8], ofs_p[8];
 		for (size_t x = 0; x < info.pcols; x++) {
 			first_i_n[x] = round_up(k+1, x, pcols); 
 			start_p[x] = get_block_global_index(&info, k, first_i_n[x]);
+			ofs_p[x] = get_block_global_index(&info, k, x);
 			len_p[x] = (nt - first_i_n[x] + pcols-1) / pcols;
 		}
+
+		// Chop up the new row to get a start and end global index for each chop
+		int start_global[num_chops+1][pcols];
+		for(int x = 0; x < pcols; x++) {
+			for(int chop = 0; chop < num_chops; chop++) {
+				int first_i_chop = x + chop*chop_size;
+				start_global[chop][x] = get_block_global_index(&info, k, first_i_chop);
+			}
+			start_global[num_chops][x] = get_block_global_index(&info, k+1, x);
+		}
+
+// Chop containing a given column
+#define CHOP(col)            ((col)/chop_size)
+// Start of a given chop: column number on current node
+#define START_CHOP_COL(chop, row,pcol) max((chop)*chop_size + pcol, round_up(row+1, pcol, pcols))
+// End of a given chop: column number on current node
+#define END_CHOP_COL(chop,pcol) (((chop)+1)*chop_size + pcol)
+// Start of a given chop: global index on current node
+#define START_CHOP_IDX(chop,row,pcol) (get_block_global_index(&info, row, pcol) + (START_CHOP_COL(chop,row,pcol))/pcols)
+// Length of a given chop: elements to process
+#define CHOP_LEN(chop,row,pcol) ((END_CHOP_COL(chop,pcol)-START_CHOP_COL(chop,row,pcol))/pcols)
+
 
 		const size_t nodek0 = get_block_node(&info, k, 0);        // node of first block
 
@@ -269,13 +313,20 @@ void cholesky_ompss2(
 					weakinout(A[start_p[x];len_p[x]][0;ts][0;ts])			\
 					node(node) label("weak_trsm") priority(2+nt-1-k)
 				{
-					#pragma oss task for in(Akk[0;ts][0;ts]) inout(A[start_p[x];len_p[x]][0;ts][0;ts]) \
-								node(nanos6_cluster_no_offload) label("trsm") priority(nt-1-k)
-					for (int w=0; w<len_p[x]; w++) {
-						int i = first_i_n[x] + w * pcols;
-						(void)nt; (void)start_p; (void)len_p;
-						double (*Aki)[ts] = A[start_p[x]+w];
-						oss_trsm(ts, Akk, Aki, k,k,i, prvanim);
+					// Chop all columns
+					int first_i = first_i_n[x];
+					for(int chop = CHOP(first_i); chop < num_chops; chop++) {
+						int start_col = START_CHOP_COL(chop,k,x);
+						int start_idx = START_CHOP_IDX(chop,k,x);
+						int len = CHOP_LEN(chop,k,x);
+						#pragma oss task for in(Akk[0;ts][0;ts]) inout(A[start_idx;len][0;ts][0;ts]) \
+									node(nanos6_cluster_no_offload) label("trsm") priority(nt-1-k)
+						for (int w=0; w<len; w++) {
+							int i = start_col + w * pcols;
+							(void)nt; (void)start_idx; (void)len_p;
+							double (*Aki)[ts] = A[start_idx+w];
+							oss_trsm(ts, Akk, Aki, k,k,i, prvanim);
+						}
 					}
 				}
 			}
@@ -298,19 +349,17 @@ void cholesky_ompss2(
 					+ lidxk10                                 // offset 
 					+ ((node < nodek10) ? npcols : 0);
 
-
 				const int count = (node + 1) * blocks_per_node - first;
 
 				if (first >= info.np * blocks_per_node || count <= 0) {
 					continue;
 				}
 
-
 				#pragma oss task weakin( {A[start_p[i];len_p[i]][0;ts][0;ts], i=0;pcols} ) \
 					weakinout(A[first; count][0;ts][0;ts])					\
-					node(node) label("weak_syrk") priority(2+nt-1-k)
+					node(node) label("weak_syrk") priority(2+nt-1-k) weakinout(delay[node])
 				{
-					// nanos6_set_early_release(nanos6_no_wait);
+					 nanos6_set_early_release(nanos6_no_wait);
 					for (size_t j = first_j; j < nt; ++j) {
 						int nodejj = get_block_node(&info, j, j);
 
@@ -318,12 +367,13 @@ void cholesky_ompss2(
 							double (*Ajj)[ts] = A[ get_block_global_index(&info, j, j) ];
 							double (*Akj)[ts] = A[ get_block_global_index(&info, k, j) ];
 
-							int colkj = get_block_node(&info, k, j) % pcols;
-							int u = get_block_global_index(&info, k, j);
-							assert((u >= start_p[colkj]) && (u < start_p[colkj]+len_p[colkj]));
+							// Identify chop containing the Akj element
+							int chop = CHOP(j);
+							int start_idx = START_CHOP_IDX(chop,k,x);
+							int len = CHOP_LEN(chop,k,x);
 
 							// Take whole row on relevant node to avoid splitting dependency
-							#pragma oss task in(A[start_p[colkj];len_p[colkj]][0;ts][0;ts]) \
+							#pragma oss task in(A[start_idx;len][0;ts][0;ts]) \
 								inout(Ajj[0;ts][0;ts])				\
 								node(nanos6_cluster_no_offload) label("syrk") priority(nt-1-j)
 							{
@@ -335,26 +385,85 @@ void cholesky_ompss2(
 
 					for (size_t j = first_j; j < nt+1; j += info.prows) {
 						int first_i = round_up(j+1, x, info.pcols);
-						int colkj = j % pcols;
-						int colki = x;
+						if (first_i >= nt) {
+							// No work for this node
+							continue;
+						}
+
+						// All GEMM operations in this j iteration reference
+						// A[k,j]; get the pointer to it and the whole chop containing it
 						double (*Akj)[ts] = A[ get_block_global_index(&info, k, j) ];
+						int chop_kj = CHOP(j);
+						int colkj = j % pcols;
+						int start_chop_kj = START_CHOP_IDX(chop_kj,k,colkj);
+						int len_chop_kj = CHOP_LEN(chop_kj,k,colkj);
 
-						if (first_i < nt) {
-							int expected = (nt - first_i+pcols-1) / pcols;
-							int idx_ki0 = get_block_global_index(&info, k, first_i);
-							int idx_ji0 = get_block_global_index(&info, j, first_i);
+						for(int chop = CHOP(first_i); chop < num_chops; chop++) {
 
-								#pragma oss task for in(A[start_p[colki];len_p[colki]][0;ts][0;ts]) \
-									in(A[start_p[colkj];len_p[colkj]][0;ts][0;ts]) \
-									inout(A[idx_ji0;expected][0;ts][0;ts])					\
-									node(nanos6_cluster_no_offload) label("gemm") priority(nt-1-j)
-									for (int w=0; w<expected; w++) {
-										int i = first_i + w*pcols;
-										(void)nt;
-										double (*Aki)[ts] = A[idx_ki0 + w];
-										double (*Aji)[ts] = A[idx_ji0 + w];
+							// Inout elements to update on row j
+							int start_idx = START_CHOP_IDX(chop,j,x);
+							int start_i = START_CHOP_COL(chop,j,x);
+							int len = CHOP_LEN(chop,j,x);
+
+							// Whole chop for ki
+							int start_chop_ki = START_CHOP_IDX(chop,k,x);
+							int len_chop_ki = CHOP_LEN(chop,k,x);
+
+							// First element accessed by ki
+							int start_idx_ki = get_block_global_index(&info, k, start_i);
+
+							// Hack scheduling: we introduce a delay after the first two rows
+							// which will force the scheduler to schedule the TRSMs for the next
+							// k earlier. Otherwise all the GEMM taskfors occupy the cores so
+							// the TRSMs get scheduled at the end of the whole calculation.
+							if (j <= first_j + info.prows) {
+								// First two have delay as input
+								#pragma oss task for in(A[start_chop_ki;len_chop_ki][0;ts][0;ts]) \
+									in(A[start_chop_kj;len_chop_kj][0;ts][0;ts]) \
+									inout(A[start_idx;len][0;ts][0;ts])					\
+									node(nanos6_cluster_no_offload) label("gemm1") priority(nt-1-j) in(delay[node])
+									for (int w=0; w<len; w++) {
+										int i = start_i + w*pcols;
+										(void)nt; (void)delay;
+										assert(start_idx_ki +w >= start_chop_ki && start_idx_ki+w < start_chop_ki+len_chop_ki);
+										assert(get_block_global_index(&info,k,j) >= start_chop_kj);
+										assert(get_block_global_index(&info,k,j) < start_chop_kj + len_chop_kj);
+										double (*Aki)[ts] = A[start_idx_ki + w];
+										double (*Aji)[ts] = A[start_idx + w];
 										oss_gemm(ts, Aki, Akj, Aji, k,j,i,prvanim);
 									}
+							} else if (j == first_j + 2*info.prows) {
+								// Next in parallel with delay
+								#pragma oss task for in(A[start_chop_ki;len_chop_ki][0;ts][0;ts]) \
+									in(A[start_chop_kj;len_chop_kj][0;ts][0;ts]) \
+									inout(A[start_idx;len][0;ts][0;ts])					\
+									node(nanos6_cluster_no_offload) label("gemm2") priority(nt-1-j)
+									for (int w=0; w<len; w++) {
+										int i = start_i + w*pcols;
+										(void)nt; (void)delay;
+										double (*Aki)[ts] = A[start_idx_ki + w];
+										double (*Aji)[ts] = A[start_idx + w];
+										oss_gemm(ts, Aki, Akj, Aji, k,j,i,prvanim);
+									}
+									#pragma oss task inout(delay[node])
+									{
+										(void)delay;
+										usleep(1);
+									}
+								} else {
+								// Last after the delay
+								#pragma oss task for in(A[start_chop_ki;len_chop_ki][0;ts][0;ts]) \
+									in(A[start_chop_kj;len_chop_kj][0;ts][0;ts]) \
+									inout(A[start_idx;len][0;ts][0;ts])					\
+									node(nanos6_cluster_no_offload) label("gemm3") priority(nt-1-j) in(delay[node])
+									for (int w=0; w<len; w++) {
+										int i = start_i + w*pcols;
+										(void)nt; (void)delay;
+										double (*Aki)[ts] = A[start_idx_ki + w];
+										double (*Aji)[ts] = A[start_idx + w];
+										oss_gemm(ts, Aki, Akj, Aji, k,j,i,prvanim);
+									}
+								}
 							}
 						}
 					}
