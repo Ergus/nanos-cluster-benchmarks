@@ -281,16 +281,6 @@ void cholesky_ompss2(
 			len_p[x] = (nt - first_i_n[x] + pcols-1) / pcols;
 		}
 
-		// Chop up the new row to get a start and end global index for each chop
-		int start_global[num_chops+1][pcols];
-		for(int x = 0; x < pcols; x++) {
-			for(int chop = 0; chop < num_chops; chop++) {
-				int first_i_chop = x + chop*chop_size;
-				start_global[chop][x] = get_block_global_index(&info, k, first_i_chop);
-			}
-			start_global[num_chops][x] = get_block_global_index(&info, k+1, x);
-		}
-
 // Chop containing a given column
 #define CHOP(col)            ((col)/chop_size)
 // Start of a given chop: column number on current node
@@ -310,8 +300,9 @@ void cholesky_ompss2(
 			if (len_p[x] > 0) {
 				#pragma oss task weakin(Akk[0;ts][0;ts])			\
 					weakinout(A[start_p[x];len_p[x]][0;ts][0;ts])			\
-					node(node) label("weak_trsm") priority(2+nt-1-k)
+					node(node) label("weak_trsm") priority(nt)
 				{
+					 nanos6_set_early_release(nanos6_no_wait);
 					// Chop all columns
 					int first_i = first_i_n[x];
 					for(int chop = CHOP(first_i); chop < num_chops; chop++) {
@@ -319,7 +310,7 @@ void cholesky_ompss2(
 						int start_idx = START_CHOP_IDX(chop,k,x);
 						int len = CHOP_LEN(chop,k,x);
 						#pragma oss task for in(Akk[0;ts][0;ts]) inout(A[start_idx;len][0;ts][0;ts]) \
-									node(nanos6_cluster_no_offload) label("trsm") priority(nt-1-k)
+									node(nanos6_cluster_no_offload) label("trsm") priority(nt)
 						for (int w=0; w<len; w++) {
 							int i = start_col + w * pcols;
 							(void)nt; (void)start_idx; (void)len_p;
