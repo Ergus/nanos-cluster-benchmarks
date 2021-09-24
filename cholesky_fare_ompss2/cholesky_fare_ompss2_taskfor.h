@@ -43,6 +43,8 @@ extern "C" {
 #define PRVANIM_SYRK 4
 #define PRVANIM_EVENT 9200042
 
+#define __WITH_EXTRAE 1
+
 #if __WITH_EXTRAE
 
 #define BLAS_EVENT 9910003

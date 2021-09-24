@@ -228,9 +228,9 @@ inline int max(int x, int y)
 
 void cholesky_ompss2(
 	const struct matrix_info *pinfo,
-	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
+	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts],
+	int prvanim
 ) {
-	int prvanim = 1;
 	const size_t dim = pinfo->nt * pinfo->ts;
 	const size_t nt = pinfo->nt;
 	const size_t ts = pinfo->ts;
@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
 	printf("# Starting warmup\n");
 
 	timer atimer_warmup = create_timer("Warmup_time");
-	cholesky_ompss2(&info, A);
+	cholesky_ompss2(&info, A, 0);
 	#pragma oss taskwait
 
 	stop_timer(&atimer_warmup);
@@ -526,7 +526,7 @@ int main(int argc, char *argv[])
 		nanos6_stats_clear();
 	}
 	timer atimer = create_timer("Algorithm_time");
-	cholesky_ompss2(&info, A);
+	cholesky_ompss2(&info, A, 1);
 	#pragma oss taskwait
 
 	stop_timer(&atimer);
