@@ -244,7 +244,6 @@ void cholesky_ompss2(
 	const size_t pcols = info.pcols;
 	const size_t npcols = info.nt / info.pcols;
 	const size_t blocks_per_node = info.blocks_per_node;
-	int delay[64];
 
 	// Size of each taskfor in terms of the whole matrix (the number
 	// of elements in an actual taskfor is chop / pcols)
@@ -357,7 +356,7 @@ void cholesky_ompss2(
 
 				#pragma oss task weakin( {A[start_p[i];len_p[i]][0;ts][0;ts], i=0;pcols} ) \
 					weakinout(A[first; count][0;ts][0;ts])					\
-					node(node) label("weak_syrk") priority(2+nt-1-k) weakinout(delay[node])
+					node(node) label("weak_syrk") priority(2+nt-1-k)
 				{
 					 nanos6_set_early_release(nanos6_no_wait);
 					for (size_t j = first_j; j < nt; ++j) {
@@ -383,9 +382,6 @@ void cholesky_ompss2(
 						}
 					}
 					
-					int hack_val = round_up(num_chops,0,2) + 1; // and round up to next odd number (assuming 2 sockets)
-					int hack_count = 0;
-
 					for (size_t j = first_j; j < nt+1; j += info.prows) {
 						int first_i = round_up(j+1, x, info.pcols);
 						if (first_i >= nt) {
@@ -415,59 +411,20 @@ void cholesky_ompss2(
 							// First element accessed by ki
 							int start_idx_ki = get_block_global_index(&info, k, start_i);
 
-							// Hack scheduling: we introduce a delay after the first two rows
-							// which will force the scheduler to schedule the TRSMs for the next
-							// k earlier. Otherwise all the GEMM taskfors occupy the cores so
-							// the TRSMs get scheduled at the end of the whole calculation.
-							if (hack_count < hack_val) {
-								// First two have delay as input
-								#pragma oss task for in(A[start_chop_ki;len_chop_ki][0;ts][0;ts]) \
-									in(A[start_chop_kj;len_chop_kj][0;ts][0;ts]) \
-									inout(A[start_idx;len][0;ts][0;ts])					\
-									node(nanos6_cluster_no_offload) label("gemm1") priority(nt-1-j) in(delay[node])
-									for (int w=0; w<len; w++) {
-										int i = start_i + w*pcols;
-										(void)nt; (void)delay;
-										assert(start_idx_ki +w >= start_chop_ki && start_idx_ki+w < start_chop_ki+len_chop_ki);
-										assert(get_block_global_index(&info,k,j) >= start_chop_kj);
-										assert(get_block_global_index(&info,k,j) < start_chop_kj + len_chop_kj);
-										double (*Aki)[ts] = A[start_idx_ki + w];
-										double (*Aji)[ts] = A[start_idx + w];
-										oss_gemm(ts, Aki, Akj, Aji, k,j,i,prvanim);
-									}
-							} else if (hack_count == hack_val) {
-								// Next in parallel with delay
-								#pragma oss task for in(A[start_chop_ki;len_chop_ki][0;ts][0;ts]) \
-									in(A[start_chop_kj;len_chop_kj][0;ts][0;ts]) \
-									inout(A[start_idx;len][0;ts][0;ts])					\
-									node(nanos6_cluster_no_offload) label("gemm2") priority(nt-1-j)
-									for (int w=0; w<len; w++) {
-										int i = start_i + w*pcols;
-										(void)nt; (void)delay;
-										double (*Aki)[ts] = A[start_idx_ki + w];
-										double (*Aji)[ts] = A[start_idx + w];
-										oss_gemm(ts, Aki, Akj, Aji, k,j,i,prvanim);
-									}
-									#pragma oss task inout(delay[node])
-									{
-										(void)delay;
-										usleep(1);
-									}
-								} else {
-								// Last after the delay
-								#pragma oss task for in(A[start_chop_ki;len_chop_ki][0;ts][0;ts]) \
-									in(A[start_chop_kj;len_chop_kj][0;ts][0;ts]) \
-									inout(A[start_idx;len][0;ts][0;ts])					\
-									node(nanos6_cluster_no_offload) label("gemm3") priority(nt-1-j) in(delay[node])
-									for (int w=0; w<len; w++) {
-										int i = start_i + w*pcols;
-										(void)nt; (void)delay;
-										double (*Aki)[ts] = A[start_idx_ki + w];
-										double (*Aji)[ts] = A[start_idx + w];
-										oss_gemm(ts, Aki, Akj, Aji, k,j,i,prvanim);
-									}
+							#pragma oss task for in(A[start_chop_ki;len_chop_ki][0;ts][0;ts]) \
+								in(A[start_chop_kj;len_chop_kj][0;ts][0;ts]) \
+								inout(A[start_idx;len][0;ts][0;ts])					\
+								node(nanos6_cluster_no_offload) label("gemm1") priority(nt-1-j) chunksize(1)
+								for (int w=0; w<len; w++) {
+									int i = start_i + w*pcols;
+									(void)nt;
+									assert(start_idx_ki +w >= start_chop_ki && start_idx_ki+w < start_chop_ki+len_chop_ki);
+									assert(get_block_global_index(&info,k,j) >= start_chop_kj);
+									assert(get_block_global_index(&info,k,j) < start_chop_kj + len_chop_kj);
+									double (*Aki)[ts] = A[start_idx_ki + w];
+									double (*Aji)[ts] = A[start_idx + w];
+									oss_gemm(ts, Aki, Akj, Aji, k,j,i,prvanim);
 								}
-								hack_count ++;
 							}
 						}
 					}
