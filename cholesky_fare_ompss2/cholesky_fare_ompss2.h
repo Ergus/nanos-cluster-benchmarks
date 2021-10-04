@@ -113,15 +113,88 @@ void register_prvanim_events()
 
 #endif // __WITH_EXTRAE
 
-void dgemm_(const char *transa, const char *transb, int *l, int *n, int *m, double *alpha,
-	const void *a, int *lda, void *b, int *ldb, double *beta, void *c, int *ldc);
+void dgemm_(const char *transa, const char *transb, int *l, int *n, int *m,
+            double *alpha, const void *a, int *lda, void *b, int *ldb,
+            double *beta, void *c, int *ldc);
 
-void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n, double *alpha,
-	double *a, int *lda, double *b, int *ldb);
+void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
+            double *alpha, double *a, int *lda, double *b, int *ldb);
 
-void dsyrk_(char *uplo, char *trans, int *n, int *k, double *alpha, double *a, int *lda,
-	double *beta, double *c, int *ldc);
+void dsyrk_(char *uplo, char *trans, int *n, int *k,
+            double *alpha, double *a, int *lda,
+            double *beta, double *c, int *ldc);
 
+
+//! This is to initialize blocks[i][j]
+static inline void fill_block(const size_t ts, double block[ts][ts],
+                              const size_t i, const size_t j, const size_t dim
+) {
+	myassert(block);
+
+	const size_t seed = (i > j) ? i * ts + j : j * ts + i;
+	struct drand48_data status;       	// using re-entrant version for rng
+	srand48_r(seed, &status);
+	double rnd1, rnd2;
+
+	for (size_t k = 0; k < ts; ++k) {
+		if (i == j) {
+			drand48_r(&status, &rnd1);
+			drand48_r(&status, &rnd2);
+			block[k][k] = rnd1 * rnd2 + dim;
+
+			for (size_t l = k + 1; l < ts; ++l) {
+				drand48_r(&status, &rnd1);
+				drand48_r(&status, &rnd2);
+
+				const double val = rnd1 * rnd2;
+				block[k][l] = val;
+				block[l][k] = val;
+			}
+
+		} else {
+			for (size_t l = 0; l < ts; ++l) {
+				drand48_r(&status, &rnd1);
+				drand48_r(&status, &rnd2);
+
+				if (i > j) {
+					block[k][l] = rnd1 * rnd2;
+				} else {
+					block[l][k] = rnd1 * rnd2;
+				}
+			}
+		}
+	}
+}
+
+static inline bool compare_blocks(
+	const size_t ts,
+	double B1[ts][ts],
+	double B2[ts][ts]
+) {
+	for (size_t k = 0; k < ts; ++k) {
+		for (size_t l = 0; l < ts; ++l) {
+			if (B1[k][l] != B2[k][l]) {
+				printf("Check failed for B[%zu][%zu] = %lf expected: %lf\n",
+				       k, l,
+				       B1[k][l], B2[k][l]);
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+static inline void print_block(const size_t ts, double A[ts][ts])
+{
+
+	for (size_t i = 0; i < ts; ++i) {
+		for (size_t j = 0; j < ts; ++j) {
+			printf("%5.2f ", (float)A[i][j]);
+		}
+		printf("\n");
+	}
+	fflush(stdout);
+}
 
 static inline void oss_potrf(int ts, double A[ts][ts], int k, int y, int x, int prvanim)
 {

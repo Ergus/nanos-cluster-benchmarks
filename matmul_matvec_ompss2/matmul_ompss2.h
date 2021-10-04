@@ -31,8 +31,8 @@ extern "C" {
 
 
 	void matmul_base(const double *A, const double *B, double * const C,
-	                 size_t lrowsA, size_t dim, size_t colsBC)
-	{
+	                 size_t lrowsA, size_t dim, size_t colsBC
+	) {
 		for (size_t i = 0; i < lrowsA; ++i) {
 			for (size_t k = 0; k < colsBC; ++k)
 				C[i * colsBC + k] = 0.0;
@@ -48,8 +48,8 @@ extern "C" {
 	}
 
 	bool validate(const double *A, const double *B, double *C,
-	              size_t dim, size_t colsBC)
-	{
+	              size_t dim, size_t colsBC
+	) {
 		bool success = false;
 
 		#pragma oss task in(A[0; dim * dim])			\
@@ -77,6 +77,60 @@ extern "C" {
 		#pragma oss taskwait
 		return success;
 	}
+
+
+	double *alloc_init(const size_t rows, size_t cols, size_t ts, bool init)
+	{
+		const size_t numNodes = nanos6_get_num_cluster_nodes();
+		myassert(rows >= ts);              // at least 1 portion per task
+		myassert(rows / ts >= numNodes);   // at least 1 task / node.
+		modcheck(rows, ts);
+
+		const size_t size = cols * rows;
+
+		double *ret =
+			(double *) nanos6_dmalloc(size * sizeof(double),
+			                          nanos6_equpart_distribution, 0, NULL);
+		myassert(ret != NULL);
+
+		if (init) { // Initialize to random??
+
+			const size_t rowsPerNode = rows / numNodes;
+
+			for (size_t i = 0; i < rows; i += rowsPerNode) { // loop nodes
+
+#if WITH_NODE == 1
+				const int nodeid = i / rowsPerNode;
+#else
+				const int nodeid = nanos6_cluster_no_hint;
+#endif
+				#pragma oss task weakout(ret[i * cols; rowsPerNode * cols]) \
+					node(nodeid) label("initalize_weak")
+				{
+					for (size_t j = i; j < i + rowsPerNode; j += ts) { // loop tasks
+
+						#pragma oss task out(ret[j * cols; ts * cols])		\
+							node(nanos6_cluster_no_offload) label("initalize_slice")
+						{
+							struct drand48_data drand_buf;
+							srand48_r(j, &drand_buf);
+							double x;
+
+							const size_t elems = ts * cols;
+
+							for (size_t k = 0; k < elems; ++k) {
+								drand48_r(&drand_buf, &x);
+								ret[j * cols + k] = x;
+							}
+						}
+					}
+				}
+			}
+
+		}
+		return ret;
+	}
+
 
 #ifdef __cplusplus
 }

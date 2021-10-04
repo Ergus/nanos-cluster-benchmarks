@@ -51,8 +51,8 @@ foreach (ISMATVEC 0;1)
   list(GET TESTLIST ${ISMATVEC} TEST)
 
   # weak tests.
-  SET(FETCHLIST nofetch fetchall fetchfirst) # fetch
-  foreach (FETCHTASK 0;1;2)
+  SET(FETCHLIST nofetch fetchall fetchfirst taskfor) # fetch
+  foreach (FETCHTASK 0;1;2;3)
     list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
 
     SET(NODELIST nonode node) # node clause
@@ -63,6 +63,7 @@ foreach (ISMATVEC 0;1)
       message("- Add benchmark: ${executable}")
       add_executable(${executable} matmul_ompss2.c)
       target_compile_definitions(${executable}
+	PUBLIC -DISSTRONG=0
 	PUBLIC -DFETCHTASK=${FETCHTASK}
 	PUBLIC -DWITH_NODE=${WITH_NODE}
 	PUBLIC -DISMATVEC=${ISMATVEC})

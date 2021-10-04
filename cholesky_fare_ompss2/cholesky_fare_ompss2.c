@@ -40,37 +40,6 @@ void print_matrix_task(const size_t nt, const size_t ts,
 	}
 }
 
-
-void print_block(const size_t ts, double A[ts][ts])
-{
-
-	for (size_t i = 0; i < ts; ++i) {
-		for (size_t j = 0; j < ts; ++j) {
-			printf("%5.2f ", (float)A[i][j]);
-		}
-		printf("\n");
-	}
-	fflush(stdout);
-}
-
-bool compare_blocks(const size_t ts,
-                    double B1[ts][ts], double B2[ts][ts]
-) {
-	for (size_t k = 0; k < ts; ++k) {
-		for (size_t l = 0; l < ts; ++l) {
-			if (B1[k][l] != B2[k][l]) {
-				printf("Check failed for B[%zu][%zu] = %lf expected: %lf\n",
-				       k, l,
-				       B1[k][l], B2[k][l]);
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
-
 void get_block_rank_task(const size_t nt, int block_rank[nt][nt])
 {
 	const size_t np = nanos6_get_num_cluster_nodes();
@@ -107,49 +76,6 @@ void get_block_rank_task(const size_t nt, int block_rank[nt][nt])
 		}
 	}
 }
-
-
-//! This is to initialize non-diagonal blocks (assuming 1 block/task)
-void fill_block(const size_t ts, double block[ts][ts],
-                const size_t i, const size_t j, const size_t dim
-) {
-	assert(block);
-
-	const size_t seed = (i > j) ? i * ts + j : j * ts + i;
-	struct drand48_data status;       	// using re-entrant version for rng
-	srand48_r(seed, &status);
-	double rnd1, rnd2;
-
-	for (size_t k = 0; k < ts; ++k) {
-		if (i == j) {
-			drand48_r(&status, &rnd1);
-			drand48_r(&status, &rnd2);
-			block[k][k] = rnd1 * rnd2 + dim;
-
-			for (size_t l = k + 1; l < ts; ++l) {
-				drand48_r(&status, &rnd1);
-				drand48_r(&status, &rnd2);
-
-				const double val = rnd1 * rnd2;
-				block[k][l] = val;
-				block[l][k] = val;
-			}
-
-		} else {
-			for (size_t l = 0; l < ts; ++l) {
-				drand48_r(&status, &rnd1);
-				drand48_r(&status, &rnd2);
-
-				if (i > j) {
-					block[k][l] = rnd1 * rnd2;
-				} else {
-					block[l][k] = rnd1 * rnd2;
-				}
-			}
-		}
-	}
-}
-
 
 void cholesky_init_task(const size_t nt, const size_t ts,
                         double A[nt][nt][ts][ts], double Ans[nt][nt][ts][ts],
