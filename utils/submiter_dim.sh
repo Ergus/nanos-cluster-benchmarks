@@ -23,7 +23,7 @@ add_argument -a q -l queue -h "Cluster queue" -t enum -e "debug bsc_cs xlarge" -
 
 # Arguments to bypass
 add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
-add_argument -a W -l weakscaling -h "Do weak scaling (dim*sqrt(nodes))" -t int -d 0
+add_argument -a C -l cores -h "Number of cores per node" -t int -d 48
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t int
@@ -32,8 +32,7 @@ add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 parse_args "$@"
 printargs "# "
 
-[ ${ARGS[W]} = 1 ] && suffix="weak" || suffix="strong"
-resdir="results/@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${suffix}"
+resdir="results/@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${ARGS[C]}"
 
 mkdir -p ${resdir}
 echo "# Output directory: ${resdir}"
@@ -44,9 +43,7 @@ echo "# List num ntasks: ${nodes[*]}"
 for ntask in ${ntasks[@]}; do
 	echo "# Submitting for ${ntask} task[s]"
 
-	node=$(( (ntask + 1) / 2 * 2 )) # allocate 2 tasks/ node
-
- 	sbatch --ntasks=${node} \
+ 	sbatch --ntasks=${ntask} \
 		   --time=${ARGS[w]} \
 		   --qos=${ARGS[q]} \
  		   --job-name="@TEST@_${ntask}" \
@@ -57,6 +54,6 @@ for ntask in ${ntasks[@]}; do
 		   -D ${ARGS[D]} \
 		   -B ${ARGS[B]} \
 		   -I ${ARGS[I]} \
-		   -W ${ARGS[W]} \
-		   -n ${ntask}
+		   -N ${ntask}   \
+		   -C ${ARGS[C]}
 done

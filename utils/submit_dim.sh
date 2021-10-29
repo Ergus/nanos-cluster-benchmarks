@@ -2,8 +2,8 @@
 
 #SBATCH --workdir=.
 
-#SBATCH --tasks-per-node=2
-#SBATCH --cpus-per-task=24
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=48
 
 # Declare command line arguments.
 # In this script there are not default values to prevent errors.
@@ -11,13 +11,13 @@ source @PROJECT_BINARY_DIR@/argparse.sh
 
 # Arguments to use in this script
 add_argument -a R -l repeats -h "Repetitions per program" -t int
-add_argument -a W -l weakscaling -h "Do weak scaling (dim*sqrt(nodes))" -t int
+add_argument -a C -l cores -h "Number of cores per node" -t int
+add_argument -a N -l ntasks -h "number of tasks" -t int
 
 # Arguments for the executable
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t int
 add_argument -a I -l iterations -h "Program interations" -t int
-add_argument -a n -l ntasks -h "number of tasks" -t int
 
 # Parse input command line arguments
 parse_args "$@"
@@ -29,10 +29,12 @@ BS=${ARGS[B]}
 REPEATS=${ARGS[R]}
 ITS=${ARGS[I]}
 
-NTASTS=${ARGS[n]}
+NTASTS=${ARGS[N]}
+CORES=${ARGS[C]}
 
 # special nanos variables needed to set.
 export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
+export OMP_NUM_THREADS=${CORES}
 
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
@@ -42,6 +44,7 @@ echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
 echo "# QOS: ${SLURM_JOB_QOS}"
 echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
 echo "# Walltime: $(squeue -h -j $SLURM_JOBID -o "%l")"
+echo "# OMP_NUM_THREADS: ${OMP_NUM_THREADS}"
 
 # Print command line arguments
 printargs "# "
@@ -59,7 +62,7 @@ for EXE in @TEST@_*; do
 	for DISABLE_REMOTE in false true; do  # namespace enable/disable
 		export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=${DISABLE_REMOTE}"
 
-		COMMAND="srun --ntasks=${NTASTS} ./${EXE} $DIM $BS $ITS"
+		COMMAND="srun --ntasks=${NTASTS} taskset -c 0-$((CORES - 1)) ./${EXE} $DIM $BS $ITS"
 
 		echo -e "# Starting command: ${COMMAND}"
 		echo "# ======================================"
