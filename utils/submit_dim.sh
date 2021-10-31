@@ -34,7 +34,6 @@ CORES=${ARGS[C]}
 
 # special nanos variables needed to set.
 export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
-export OMP_NUM_THREADS=${CORES}
 
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
@@ -44,7 +43,6 @@ echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
 echo "# QOS: ${SLURM_JOB_QOS}"
 echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
 echo "# Walltime: $(squeue -h -j $SLURM_JOBID -o "%l")"
-echo "# OMP_NUM_THREADS: ${OMP_NUM_THREADS}"
 
 # Print command line arguments
 printargs "# "
