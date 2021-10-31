@@ -22,8 +22,7 @@ import json
 import pandas as pd
 import numpy as np
 import re
-
-data = {}
+import pprint
 
 def add_lines_and_scale(ax1, ax2, dt_ts, column, label):
     if dt_ts.empty:
@@ -55,7 +54,7 @@ def add_lines_and_scale(ax1, ax2, dt_ts, column, label):
     ax2.errorbar(x, sy, errsy, fmt ='o-', label=label)
 
 
-def process_tasksize(rows, ts, column):
+def process_tasksize(data, rows, ts, cpu_count, column):
     """Create graphs time vs tasksize"""
 
     fig = plt.figure()
@@ -80,159 +79,94 @@ def process_tasksize(rows, ts, column):
 
     for key in data:
         dt_key = data[key]
-        key_splits=key.split("_")
-        label = " ".join(key_splits[1:])
 
-        if  key.endswith("mpi"):
-            dt = dt_key[(dt_key['Rows'] == rows) & \
-                        (dt_key['Tasksize'] == ts) ]
+        # "cholesky_memory_ompss2" -> "memory ompss2"
+        label = " ".join(key.split("_")[1:])
 
-            add_lines_and_scale(ax1, ax2, dt, column, label)
+        dt = dt_key[(dt_key['Rows'] == rows) & \
+                    (dt_key['Tasksize'] == ts) & \
+                    (dt_key['cpu_count'] == cpu_count)]
 
+        if key.endswith("mpi"):
+            dt_mpi = dt
+            add_lines_and_scale(ax1, ax2, dt_mpi, column, label)
         else:
             for ns in range(2):
-                labelns = label + [" ns", " nons"][ns]
+                dt_ns = dt[(dt['namespace_enabled'] == ns)]
+                labelns = label + [" nons", " ns"][ns]
 
-                dt = dt_key[(dt_key['Rows'] == rows) & \
-                            (dt_key['Tasksize'] == ts) & \
-                            (dt_key['namespace_enabled'] == ns) ]
+                add_lines_and_scale(ax1, ax2, dt_ns, column, labelns)
 
-                add_lines_and_scale(ax1, ax2, dt, column, labelns)
+    plt.legend(bbox_to_anchor=(1,1),
+               loc='center left',
+               fontsize='x-small',
+               fancybox=True, shadow=True, ncol=1)
 
-    plt.legend(loc='upper right',
-                   bbox_to_anchor=(1.14, 2.2),
-                   fancybox=True, shadow=True, ncol=1)
+    # Save image file.
+    filename = column+"_" \
+        + key.split("_")[0]+"_" \
+        +str(rows)+"_" \
+        +str(ts)+"_" \
+        +str(cpu_count)+".png"
 
-    filename = column+"_"+str(rows)+"_"+str(ts)+".png"
-    plt.savefig(filename)
+    fig.savefig(filename,
+                dpi=300,
+                format='png',
+                #bbox_extra_artists=[leg],
+                bbox_inches='tight')
+
     plt.close()
     print("Generated: ", filename)
 
 
 # Tasksize
 
-def process_all_tasksize():
+def process_all(data):
     """Create all the blocksize graphs"""
 
     first_dt = data[list(data.keys())[0]]
 
     rows_vals = first_dt['Rows'].drop_duplicates()
     ts_vals = first_dt['Tasksize'].drop_duplicates()
+    cpu_counts = first_dt['cpu_count'].drop_duplicates()
 
     for row in rows_vals:
         for ts in ts_vals:
-            process_tasksize(row, ts, "Algorithm_time")
+            for cpu_count in cpu_counts:
+                process_tasksize(data, row, ts, cpu_count, "Algorithm_time")
 
-
-# for rows in row_vals:
-#     dt_rows = dt[dt['Rows'] == rows]
-#     tasksize_vals = dt_rows['Tasksize'].drop_duplicates()
-
-#     fig = plt.figure()
-#     gs = fig.add_gridspec(2, hspace=0)
-#     (ax1, ax2) = gs.subplots(sharex=True, sharey=False)
-#     fig.suptitle(key)
-
-#     ax1.set_xlabel('Nodes')
-#     ax1.set_ylabel(column)
-#     ax1.grid(color='b', ls = '-.', lw = 0.25)
-
-#     ax2.set_xlabel('Nodes')
-#     ax2.set_ylabel("Scalability "+column)
-#     ax2.grid(color='b', ls = '-.', lw = 0.25)
-
-#     # Time
-#     for ts in tasksize_vals:
-#         dt_ts = dt_rows[dt_rows['Tasksize'] == ts]
-#         if dt_ts.empty:
-#             print("Ignore Tasksize: ", ts)
-#             continue
-
-#         add_lines(ax1, ax2, dt_ts, column, str(ts))
-
-
-# def process_group(dim, ts, keys, prefix):
-#     print("Processing group: ", dim, ts)
-#     fig = plt.figure()
-#     gs = fig.add_gridspec(2, hspace=0)
-#     (ax1, ax2) = gs.subplots(sharex=True, sharey=False)
-#     fig.suptitle(str(dim)+"x"+str(ts))
-
-#     #First Graph (Time)
-#     ax1.set_xlabel('Nodes')
-#     ax1.set_ylabel("Algorithm time")
-#     ax1.grid(color='b', ls = '-.', lw = 0.25)
-
-#     #Second Graph (Scalability)
-#     ax2.set_xlabel('Nodes')
-#     ax2.set_ylabel("Scalability ")
-#     ax2.grid(color='b', ls = '-.', lw = 0.25)
-
-#     for key in keys:
-#         if key.find("strong") != -1:
-#             tag = "strong"
-#         elif key.find("weak") != -1:
-#             split = key.split("_")
-#             tag = split[2]+" "+split[4]
-#         elif key.find("mpi") != -1:
-#             tag = "mpi"
-
-#         dt = data[key]
-#         dt_ts = dt.loc[(dt['Rows'] == dim) & (dt['Tasksize'] == ts)]
-
-#         if dt_ts.empty:
-#             print("Ignore key %s, Rows: %s, Tasksize: %s"
-#                   % (key, dim, ts))
-#             continue
-
-#         add_lines(ax1, ax2, dt_ts, "Algorithm time", tag)
-
-#     plt.legend(loc='center right',
-#                bbox_to_anchor=(1.14, 2),
-#                fancybox=True, shadow=True, ncol=1)
-
-#     filename = prefix+"_"+str(dim)+"_"+str(ts)+".png"
-#     plt.savefig(filename)
-#     plt.close()
-#     print("Generated: ", filename)
-
-
-# def process_all(prefix, myregex):
-#     dt = next(iter(data.values()))
-
-#     row_vals = dt['Rows'].drop_duplicates()   # number of rows tests.
-#     ts_vals = dt['Tasksize'].drop_duplicates()   # number of rows tests.
-
-#     # Iterate over keys.
-#     re1 = re.compile(myregex)    # Comments like # Anything
-#     keys = [i for i in data if re1.search(i)]
-
-#     for dim in row_vals:
-#         for ts in ts_vals:
-#             process_group(dim, ts, keys, prefix)
-import pprint
 
 if __name__ == "__main__":
     data = {}
 
-    for fname in sys.argv[1:]:
-        try:
-            print("Loading:", fname)
-            with open(fname, 'r') as f:
-                fdata = json.load(f)
+    if len(sys.argv) != 2:
+        raise ValueError("Needs one filename as argument")
 
-                for key in fdata:
-                    df_in = pd.DataFrame(fdata[key])
+    fname = sys.argv[1]
 
-                    if key in data:
-                        data[key] = data[key].append(df_in)
-                    else:
-                        data[key] = df_in
+    if fname.split(".")[-1] != "json":
+        raise ValueError("Input file is not a .json")
 
-        except IOError:
-            print("File not accessible")
+    try:
+        print("Loading:", fname)
 
-    process_all_tasksize()
+        with open(fname, 'r') as f:
+            fdata = json.load(f)
+
+            for key in fdata:
+                # key is the experiment name like: cholesky_fare_ompss2_taskfor
+
+                df_in = pd.DataFrame(fdata[key])  # data to Pandas Dataframe
+
+                if key in data:
+                    data[key].append(df_in)
+                else:
+                    data[key] = df_in
+
+    except IOError:
+        print("File not accessible or json corrupt")
+
+    process_all(data)
 
     # process_all("Compare1", "mpi|(matvec_weak_fetchfirst)|(matvec_strong)")
     # process_all("Compare2", "(matvec_weak)|(matvec_strong)")
