@@ -23,6 +23,7 @@ import pandas as pd
 import numpy as np
 import re
 import pprint
+import pickle
 
 def add_lines_and_scale(ax1, ax2, dt_ts, column, label):
     if dt_ts.empty:
@@ -73,9 +74,9 @@ def process_tasksize(data, rows, ts, cpu_count, column):
     key_prefix = keylist[0].split("_")[0]
 
     if all(key.split("_")[0] == key_prefix for key in keylist):
-        prefix = key_prefix + " "
+        prefix = key_prefix
 
-    fig.suptitle(prefix+str(rows) + " x " + str(ts))
+    fig.suptitle(prefix + " " + str(rows) + " x " + str(ts) + " (" + str(cpu_count) + " cores)")
 
     for key in data:
         dt_key = data[key]
@@ -103,13 +104,16 @@ def process_tasksize(data, rows, ts, cpu_count, column):
                fancybox=True, shadow=True, ncol=1)
 
     # Save image file.
-    filename = column+"_" \
-        + key.split("_")[0]+"_" \
-        +str(rows)+"_" \
-        +str(ts)+"_" \
-        +str(cpu_count)+".png"
+    filename = column + "_" \
+        + key.split("_")[0] + "_" \
+        + str(rows) + "_" \
+        + str(ts) + "_" \
+        + str(cpu_count)
 
-    fig.savefig(filename,
+    with open(filename + ".pkl",'wb') as fid:
+        pickle.dump(fig, fid)
+
+    fig.savefig(filename + ".png",
                 dpi=300,
                 format='png',
                 #bbox_extra_artists=[leg],
