@@ -110,6 +110,14 @@ def process_tasksize(data, rows, ts, cpu_count, column):
         + str(ts) + "_" \
         + str(cpu_count)
 
+
+    # Save the plots with pickle to recover them:
+    #
+    # import matplotlib.pyplot as plt
+    # import pickle
+    # with open('filename.pkl', 'rb') as fid:
+    #     ax = pickle.load(fid)
+    # plt.show()
     with open(filename + ".pkl",'wb') as fid:
         pickle.dump(fig, fid)
 
