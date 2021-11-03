@@ -343,8 +343,6 @@ int main(int argc, char *argv[])
 	#pragma oss taskwait
 
 	stop_timer(&atimer_warmup);
-	// ===========================================
-
 	printf("# Finished warmup\n");
 
 	// ===========================================
