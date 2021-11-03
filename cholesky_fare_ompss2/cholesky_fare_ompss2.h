@@ -30,9 +30,6 @@ extern "C" {
 #include <assert.h>
 
 #include <mkl.h>
-#include <mpi.h>
-#include <omp.h>
-#include <extrae.h>
 
 #include "benchmarks_ompss.h"
 
@@ -44,6 +41,7 @@ extern "C" {
 #define PRVANIM_EVENT 9200042
 
 #if __WITH_EXTRAE
+#include <extrae.h>
 
 #define BLAS_EVENT 9910003
 
@@ -283,16 +281,6 @@ static inline void oss_syrk(int ts, double A[ts][ts], double B[ts][ts], int k, i
 		inst_prvanim(PRVANIM_NONE, k,y,x);
 	}
 }
-
-static inline void wait(MPI_Request *comm_req)
-{
-	int comm_comp = 0;
-
-	do {
-		MPI_Test(comm_req, &comm_comp, MPI_STATUS_IGNORE);
-	} while (!comm_comp);
-}
-
 
 #ifdef __cplusplus
 }

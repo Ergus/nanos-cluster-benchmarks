@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BENCHMARKS_MPI_H
-#define BENCHMARKS_MPI_H
+#ifndef BENCHMARKS_OMPSS_H
+#define BENCHMARKS_OMPSS_H
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -92,4 +92,4 @@ extern "C" {
 }
 #endif
 
-#endif // BENCHMARKS_MPI_H
+#endif // BENCHMARKS_OMPSS_H
