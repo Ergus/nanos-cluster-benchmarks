@@ -32,10 +32,10 @@ add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 parse_args "$@"
 printargs "# "
 
-resdir="results/@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${ARGS[C]}"
+jobname="@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${ARGS[C]}"
 
-mkdir -p ${resdir}
-echo "# Output directory: ${resdir}"
+mkdir -p "results/${jobname}"
+echo "# Output directory: ${jobname}"
 
 ntasks=(1 2 4 8 16 32)
 echo "# List num ntasks: ${nodes[*]}"
@@ -46,9 +46,9 @@ for ntask in ${ntasks[@]}; do
  	sbatch --ntasks=${ntask} \
 		   --time=${ARGS[w]} \
 		   --qos=${ARGS[q]} \
- 		   --job-name="@TEST@_${ntask}" \
- 		   --output="${resdir}/%x_%j.out" \
- 		   --error="${resdir}/%x_%j.err" \
+ 		   --job-name="${jobname}/${ntask}" \
+ 		   --output="results/%x_%j.out" \
+ 		   --error="results/%x_%j.err" \
  		   ./submit_@TEST@_dim.sh \
 		   -R ${ARGS[R]} \
 		   -D ${ARGS[D]} \
