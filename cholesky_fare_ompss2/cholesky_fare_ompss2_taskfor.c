@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
 	myassert(A != NULL);
 
 	double (*Ans)[TS][TS] = NULL;
-	if (CHECK) {
+	if (CHECK == 1) {
 		Ans = nanos6_dmalloc(ROWS * ROWS * sizeof(double),
 		                     nanos6_equpart_distribution, 0, NULL);
 		myassert(Ans != NULL);
@@ -521,7 +521,7 @@ int main(int argc, char *argv[])
 
 	printf("# Finished algorithm\n");
 
-	if (CHECK) {
+	if (CHECK == 1) {
 		timer stimer = create_timer("Single_time");
 		cholesky_single(&info, Ans);
 		#pragma oss taskwait
