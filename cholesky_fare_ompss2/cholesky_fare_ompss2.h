@@ -33,17 +33,11 @@ extern "C" {
 
 #include "benchmarks_ompss.h"
 
-#define PRVANIM_NONE 0
-#define PRVANIM_POTRF 1
-#define PRVANIM_TRSM 2
-#define PRVANIM_GEMM 3
-#define PRVANIM_SYRK 4
-#define PRVANIM_EVENT 9200042
-
 #if __WITH_EXTRAE
 #include <extrae.h>
 
 #define BLAS_EVENT 9910003
+#define PRVANIM_EVENT 9200042
 
 #define BLAS_EVENT_VALUES						\
 	EVENT(BLAS_NONE)							\
@@ -61,12 +55,12 @@ enum blas_values_t {
 
 void register_blas_events()
 {
-	extrae_type_t event = BLAS_EVENT;
+	inst_type_t event = BLAS_EVENT;
 
 	unsigned nvalues = BLAS_NEVENTS;
 
 	static extrae_value_t blas_values[BLAS_NEVENTS] = {
-#define EVENT(evt) (extrae_value_t) evt,
+#define EVENT(evt) (inst_value_t) evt,
 		BLAS_EVENT_VALUES
 #undef EVENT
 	};
@@ -78,36 +72,41 @@ void register_blas_events()
 	};
 
 	inst_define_event_type(&event, "blas_event", &nvalues, blas_values, blas_names);
+
+/* #ifdef __WITH_PRVANIM */
+/* 	nvalues = 0; */
+
+/* 	event = PRVANIM_EVENT; */
+/* 	inst_define_event_type(&event, "prvanim kernel", &nvalues, NULL, NULL); */
+/* 	event = PRVANIM_K; */
+/* 	inst_define_event_type(&event, "prvanim k", &nvalues, NULL, NULL); */
+/* 	event = PRVANIM_Y; */
+/* 	inst_define_event_type(&event, "prvanim y", &nvalues, NULL, NULL); */
+/* 	event = PRVANIM_X; */
+/* 	inst_define_event_type(&event, "prvanim x", &nvalues, NULL, NULL); */
+/* #endif // __WITH_PRVANIM */
 }
 
-void inst_prvanim(int kernel, int k, int y, int x)
+void inst_blas_kernel(bool emmit, int kernel, int k, int y, int x)
 {
+	inst_event(BLAS_EVENT, kernel);
+
+#ifdef __WITH_PRVANIM
+	if (!emmit) {
+		return;
+	}
 	nanos6_instrument_event(PRVANIM_EVENT, kernel);
 	nanos6_instrument_event(PRVANIM_EVENT, k + 1000000);
 	nanos6_instrument_event(PRVANIM_EVENT, y + 2000000);
 	nanos6_instrument_event(PRVANIM_EVENT, x + 3000000);
+#endif // __WITH_PRVANIM
 }
-
-void register_prvanim_events()
-{
-	// extrae_type_t event = PRVANIM_KERNEL;
-	// unsigned int nvalues = 0;
-	// inst_define_event_type(&event, "prvanim kernel", &nvalues, NULL, NULL);
-	// event = PRVANIM_K;
-	// inst_define_event_type(&event, "prvanim k", &nvalues, NULL, NULL);
-	// event = PRVANIM_Y;
-	// inst_define_event_type(&event, "prvanim y", &nvalues, NULL, NULL);
-	// event = PRVANIM_X;
-	// inst_define_event_type(&event, "prvanim x", &nvalues, NULL, NULL);
-}
-
 
 #else // __WITH_EXTRAE
 
 #define BLAS_EVENT 0
 #define register_blas_events()
-#define register_prvanim_events()
-#define inst_prvanim(kernel, k, y, x)
+#define inst_blas_kernel(emmit, kernel, k, y, x)
 
 #endif // __WITH_EXTRAE
 
@@ -196,28 +195,19 @@ static inline void print_block(const size_t ts, double A[ts][ts])
 
 static inline void oss_potrf(int ts, double A[ts][ts], int k, int y, int x, int prvanim)
 {
-	if (prvanim) {
-		inst_prvanim(PRVANIM_POTRF, k,y,x);
-	}
-	inst_event(BLAS_EVENT, BLAS_POTRF);
+	inst_blas_kernel(prvanim, BLAS_POTRF, k, y, x);
 	assert(A != NULL);
 
 	static int INFO;
 	static const char L = 'L';
 
 	dpotrf_(&L, &ts, (double *)A, &ts, &INFO);
-	inst_event(BLAS_EVENT, BLAS_NONE);
-	if (prvanim) {
-		inst_prvanim(PRVANIM_NONE, k,y,x);
-	}
+	inst_blas_kernel(prvanim, BLAS_NONE, k,y,x);
 }
 
 static inline void oss_trsm(int ts, double A[ts][ts], double B[ts][ts], int k, int y, int x, int prvanim)
 {
-	if (prvanim) {
-		inst_prvanim(PRVANIM_TRSM, k,y,x);
-	}
-	inst_event(BLAS_EVENT, BLAS_TRSM);
+	inst_blas_kernel(prvanim, BLAS_TRSM, k,y,x);
 	assert(A != NULL);
 	assert(B != NULL);
 
@@ -228,10 +218,7 @@ static inline void oss_trsm(int ts, double A[ts][ts], double B[ts][ts], int k, i
 	       (double *)A, &ts,
 	       (double *)B, &ts);
 
-	inst_event(BLAS_EVENT, BLAS_NONE);
-	if (prvanim) {
-		inst_prvanim(PRVANIM_NONE, k,y,x);
-	}
+	inst_blas_kernel(prvanim, BLAS_NONE, k,y,x);
 }
 
 static inline void oss_gemm(
@@ -241,10 +228,7 @@ static inline void oss_gemm(
 	double C[ts][ts],
 	int k, int y, int x, int prvanim
 ) {
-	if (prvanim) {
-		inst_prvanim(PRVANIM_GEMM, k,y,x);
-	}
-	inst_event(BLAS_EVENT, BLAS_GEMM);
+	inst_blas_kernel(prvanim, BLAS_GEMM, k,y,x);
 	assert(A != NULL);
 	assert(B != NULL);
 	assert(C != NULL);
@@ -256,18 +240,12 @@ static inline void oss_gemm(
 	       (double *)B, &ts, &DONE,
 	       (double *)C, &ts);
 
-	inst_event(BLAS_EVENT, BLAS_NONE);
-	if (prvanim) {
-		inst_prvanim(PRVANIM_NONE, k,y,x);
-	}
+	inst_blas_kernel(prvanim, BLAS_NONE, k,y,x);
 }
 
 static inline void oss_syrk(int ts, double A[ts][ts], double B[ts][ts], int k, int y, int x, int prvanim)
 {
-	if (prvanim) {
-		inst_prvanim(PRVANIM_SYRK, k,y,x);
-	}
-	inst_event(BLAS_EVENT, BLAS_SYRK);
+	inst_blas_kernel(prvanim, BLAS_SYRK, k,y,x);
 	assert(A != NULL);
 	assert(B != NULL);
 
@@ -276,10 +254,7 @@ static inline void oss_syrk(int ts, double A[ts][ts], double B[ts][ts], int k, i
     dsyrk_(&LO, &NT, &ts, &ts, &DMONE,
 	       (double *)A, &ts, &DONE,
 	       (double *)B, &ts);
-	inst_event(BLAS_EVENT, BLAS_NONE);
-	if (prvanim) {
-		inst_prvanim(PRVANIM_NONE, k,y,x);
-	}
+	inst_blas_kernel(prvanim, BLAS_NONE, k,y,x);
 }
 
 #ifdef __cplusplus

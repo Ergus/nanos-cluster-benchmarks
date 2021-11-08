@@ -15,6 +15,8 @@
 
 # 3.9 required to use FindOpenMP
 # 3.12.4 required to use FindPython
+# 3.22 May introduce some issues with cmake_dependent_option (See:
+# https://cmake.org/cmake/help/latest/policy/CMP0127.html)
 cmake_minimum_required(VERSION 3.12.4)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -22,9 +24,12 @@ find_package(MERCURIUM REQUIRED COMPONENTS intel)
 
 project(nanos6_benchmarks)
 
+include(CMakeDependentOption)
+
 option(WITH_NAMESPACE "Build tests for namespace code" true)
 option(WITH_ASAN "Build tests with address sanitizer" false)
 option(WITH_EXTRAE "Build with Extrae traces support" false)
+cmake_dependent_option(WITH_PRVANIM "Build with PRVANIM" true "WITH_EXTRAE" false)
 option(WITH_KEEP "Keep mcc intermediate files" false)
 option(WITH_SERIAL "Build serial version of the code when available." false)
 
@@ -33,8 +38,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_compile_definitions(_GNU_SOURCE)
-add_compile_options("--ompss-2" $<$<BOOL:WITH_KEEP>:-k>)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
+add_compile_options(--ompss-2 $<$<BOOL:WITH_KEEP>:-k>)
+add_link_options(--ompss-2)
 
 # Enable address sanitizer
 if (WITH_ASAN)
@@ -52,7 +57,7 @@ if (WITH_EXTRAE)
   set(USE_INSTRUMENT "extrae")
   find_package(Extrae REQUIRED COMPONENTS nanosmpitrace)
   if (Extrae_FOUND)
-    add_compile_definitions(__WITH_EXTRAE=1)
+    add_compile_definitions(__WITH_EXTRAE=1 $<$<BOOL:WITH_PRVANIM>:__WITH_PRVANIM=1>)
     include_directories(${EXTRAE_INCLUDES})
     link_libraries(${EXTRAE_LIBRARIES})
   endif ()

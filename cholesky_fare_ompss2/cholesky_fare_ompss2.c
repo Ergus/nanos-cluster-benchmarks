@@ -294,14 +294,14 @@ void cholesky_ompss2(const size_t nt, const size_t ts,
 int main(int argc, char *argv[])
 {
 	init_args(argc, argv);
-	register_prvanim_events();
 
 	const char *PREFIX = basename(argv[0]);
 	const int ROWS = create_cl_int("Rows");
 	const int TS = create_cl_int("Tasksize");
 	const int CHECK = create_optional_cl_int("Check", 0);
-
 	modcheck(ROWS, TS);
+
+	register_blas_events();  // Register the events in the instrumentation
 
 	printf("# Initializing data\n");;
 

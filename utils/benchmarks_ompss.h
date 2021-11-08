@@ -43,15 +43,17 @@ extern "C" {
 // Define extrae if macro is set.
 #if __WITH_EXTRAE
 #include "extrae_user_events.h"
-
 	typedef extrae_type_t inst_type_t;
 	typedef extrae_value_t inst_value_t;
+
 #define inst_define_event_type(type,name,nvalues,values,descriptions)	\
 	Extrae_define_event_type(type,name,nvalues,values,descriptions)
-#define inst_event(evt, val) Extrae_event(evt, val)
+#define inst_event(evt, val)					\
+	Extrae_event(evt, val)
 #else // __WITH_EXTRAE
 	typedef size_t inst_type_t;
 	typedef size_t inst_value_t;
+
 #define inst_define_event_type(type,name,nvalues,values,descriptions)
 #define inst_event(evt, val)
 #endif // __WITH_EXTRAE
