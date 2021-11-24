@@ -126,8 +126,9 @@ void jacobi_modify_taskfor(double *A, double *b, size_t dim, size_t ts)
 void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
                     size_t ts, size_t dim, size_t it
 ) {
-	if (it == 0)
+	if (it == 0){
 		printf("# matvec_taskfor TASKFOR\n");
+	}
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(ts <= dim);
@@ -137,8 +138,10 @@ void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
 	myassert(ts <= rowsPerNode);
 	modcheck(rowsPerNode, ts);
 
-	#pragma oss task inout(xin[0; dim]) node(0) label("trick2")
-	{
+	if (numNodes > 0) {
+		#pragma oss task inout(xin[0; dim]) node(0) label("trick2")
+		{
+		}
 	}
 
 	for (int i = 0; i < dim; i += rowsPerNode) {
