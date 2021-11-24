@@ -296,8 +296,8 @@ int main(int argc, char *argv[])
 	init_args(argc, argv);
 
 	const char *PREFIX = basename(argv[0]);
-	const int ROWS = create_cl_int("Rows");
-	const int TS = create_cl_int("Tasksize");
+	const size_t ROWS = create_cl_size_t("Rows");
+	const size_t TS = create_cl_size_t("Tasksize");
 	const int CHECK = create_optional_cl_int("Check", 0);
 	modcheck(ROWS, TS);
 

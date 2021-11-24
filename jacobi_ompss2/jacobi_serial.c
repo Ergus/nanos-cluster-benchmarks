@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
 	init_args(argc, argv);
 
 	const char *PREFIX = basename(argv[0]);
-	const int ROWS = create_cl_int ("Rows");
+	const size_t ROWS = create_cl_size_t ("Rows");
 
 	printf("# Initializing data\n");
 	timer ttimer = create_timer("Total_time");

@@ -221,9 +221,9 @@ int main(int argc, char* argv[])
 	init_args(argc, argv);
 
 	const char *PREFIX = basename(argv[0]);
-	const int ROWS = create_cl_int ("Rows");
-	const int TS = create_cl_int ("Tasksize");
-	const int ITS = create_optional_cl_int ("Iterations", 1);
+	const size_t ROWS = create_cl_size_t ("Rows");
+	const size_t TS = create_cl_size_t ("Tasksize");
+	const size_t ITS = create_optional_cl_size_t ("Iterations", 1);
 	const int PRINT = create_optional_cl_int ("Print", 0);
 
 	printf("# Initializing data\n");
