@@ -115,12 +115,13 @@ def process_tasksize(data, rows, ts, cpu_count, column):
     #
     # import matplotlib.pyplot as plt
     # import pickle
-    # with open('filename.pkl', 'rb') as fid:
-    #     ax = pickle.load(fid)
+    # with open('filename.pkl', 'rb') as pkl:
+    #     ax = pickle.load(pkl)
     # plt.show()
-    with open(filename + ".pkl",'wb') as fid:
-        pickle.dump(fig, fid)
+    with open(filename + ".pkl",'wb') as pkl:
+        pickle.dump(fig, pkl)
 
+    # Save the image as a png
     fig.savefig(filename + ".png",
                 dpi=300,
                 format='png',
