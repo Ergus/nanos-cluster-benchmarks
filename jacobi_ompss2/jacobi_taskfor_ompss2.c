@@ -123,16 +123,67 @@ void jacobi_modify_taskfor(double *A, double *b, size_t dim, size_t ts)
 }
 
 
+/* void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout, */
+/*                     size_t ts, size_t dim, size_t it */
+/* ) { */
+/* 	if (it == 0){ */
+/* 		printf("# matvec_taskfor TASKFOR\n"); */
+/* 	} */
+
+/* 	const size_t numNodes = nanos6_get_num_cluster_nodes(); */
+/* 	myassert(ts <= dim); */
+/* 	modcheck(dim, ts); */
+
+/* 	const size_t rowsPerNode = dim / numNodes; */
+/* 	myassert(ts <= rowsPerNode); */
+/* 	modcheck(rowsPerNode, ts); */
+
+/* 	if (numNodes > 0) { */
+/* 		#pragma oss task inout(xin[0; dim]) node(0) label("trick2") */
+/* 		{ */
+/* 		} */
+/* 	} */
+
+/* 	for (int i = 0; i < dim; i += rowsPerNode) { */
+
+/* 		const int nodeid = i / rowsPerNode; */
+
+/* 		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])		\ */
+/* 			weakin(xin[0; dim])											\ */
+/* 			weakin(B[i; rowsPerNode])									\ */
+/* 			weakout(xout[i; rowsPerNode])								\ */
+/* 			node(nodeid)												\ */
+/* 			firstprivate(ts) wait label("weakjacobi_taskfor") */
+/* 		{ */
+/* 			#pragma oss task for in(A[i * dim; rowsPerNode * dim])	\ */
+/* 				in(xin[0; dim])											\ */
+/* 				in(B[i; rowsPerNode])									\ */
+/* 				out(xout[i; rowsPerNode])								\ */
+/* 				firstprivate(ts) chunksize(ts) label("jacobi_taskfor") */
+/* 			for (size_t j = i; j < i + rowsPerNode; ++j) { */
+/* 				inst_event(9910002, dim); */
+
+/* 				jacobi_base(&A[j * dim], B[j], xin, &xout[j], dim); */
+
+/* 				inst_event(9910002, 0); */
+/* 			} */
+/* 		} */
+/* 	} */
+/* } */
+
 void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
-                    size_t ts, size_t dim, size_t it
+                    size_t nchunks, size_t dim, size_t it
 ) {
 	if (it == 0){
 		printf("# matvec_taskfor TASKFOR\n");
 	}
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
-	myassert(ts <= dim);
-	modcheck(dim, ts);
+	myassert(nchunks <= dim);
+	modcheck(dim, nchunks);
+
+	const size_t ts = dim / numNodes / nchunks;
+	myassert(ts * numNodes * nchunks == dim);
 
 	const size_t rowsPerNode = dim / numNodes;
 	myassert(ts <= rowsPerNode);
