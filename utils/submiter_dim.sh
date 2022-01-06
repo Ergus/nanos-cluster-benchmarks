@@ -19,12 +19,12 @@ source @PROJECT_BINARY_DIR@/argparse.sh
 
 # Arguments for this script
 add_argument -a w -l wtime -h "Wall time limit for jobs" -t timer -d 12:00:00
-add_argument -a q -l queue -h "Cluster queue" -t enum -e "debug bsc_cs xlarge" -d "bsc_cs"
+add_argument -a q -l queue -h "Cluster queue" -t enum -e debug,bsc_cs,xlarge -d bsc_cs
 
 # Arguments to bypass
 add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
 add_argument -a N -l nodes -h "Number of nodes" -t list -d 1,2,4,8,16,32
-add_argument -a C -l cores -h "Number of cores per node" -t string -d 12,24,48
+add_argument -a C -l cores -h "Number of cores per node" -t list -d 12,24,48
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t int
