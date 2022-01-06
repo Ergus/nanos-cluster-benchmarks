@@ -23,7 +23,8 @@ add_argument -a q -l queue -h "Cluster queue" -t enum -e "debug bsc_cs xlarge" -
 
 # Arguments to bypass
 add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
-add_argument -a C -l cores -h "Number of cores per node" -t int -d 48
+add_argument -a N -l nodes -h "Number of nodes" -t list -d 1,2,4,8,16,32
+add_argument -a C -l cores -h "Number of cores per node" -t string -d 12,24,48
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t int
@@ -32,15 +33,14 @@ add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 parse_args "$@"
 printargs "# "
 
-jobname="@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}_${ARGS[C]}"
+jobname="@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}"
 
 mkdir -p "results/${jobname}"
 echo "# Output directory: ${jobname}"
 
-ntasks=(1 2 4 8 16 32)
-echo "# List num ntasks: ${nodes[*]}"
+echo "# List num ntasks: ${ARGS[N]}"
 
-for ntask in ${ntasks[@]}; do
+for ntask in ${ARGS[N]}; do
 	echo "# Submitting for ${ntask} task[s]"
 
  	sbatch --ntasks=${ntask} \
@@ -55,5 +55,5 @@ for ntask in ${ntasks[@]}; do
 		   -B ${ARGS[B]} \
 		   -I ${ARGS[I]} \
 		   -N ${ntask}   \
-		   -C ${ARGS[C]}
+		   -C ${ARGS[C]// /,}
 done

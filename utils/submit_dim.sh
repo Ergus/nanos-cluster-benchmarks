@@ -11,8 +11,8 @@ source @PROJECT_BINARY_DIR@/argparse.sh
 
 # Arguments to use in this script
 add_argument -a R -l repeats -h "Repetitions per program" -t int
-add_argument -a C -l cores -h "Number of cores per node" -t int
 add_argument -a N -l ntasks -h "number of tasks" -t int
+add_argument -a C -l cores -h "Number of cores per node" -t list
 
 # Arguments for the executable
 add_argument -a D -l dim -h "Matrix dimension" -t int
@@ -57,23 +57,25 @@ if [ $((SLURM_JOB_NUM_NODES*BS<=DIM)) != 1 ]; then
 fi
 
 for EXE in @TEST@_*; do
-	for DISABLE_REMOTE in false true; do  # namespace enable/disable
-		export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=${DISABLE_REMOTE}"
+	for NCORES in $CORES; do
+		for DISABLE_REMOTE in false true; do  # namespace enable/disable
+			export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=${DISABLE_REMOTE}"
 
-		COMMAND="srun --ntasks=${NTASTS} taskset -c 0-$((CORES - 1)) ./${EXE} $DIM $BS $ITS"
+			COMMAND="srun --ntasks=${NTASTS} taskset -c 0-$((NCORES - 1)) ./${EXE} $DIM $BS $ITS"
 
-		echo -e "# Starting command: ${COMMAND}"
-		echo "# ======================================"
-		for ((it=0; it<${REPEATS}; ++it)) {
-			echo "# Starting it: ${it} at: $(date)"
-			start=${SECONDS}
-			${COMMAND}
-			end=${SECONDS}
-			echo "# Ending: $(date)"
-			echo "# Elapsed: $((end-start))"
-			echo "# --------------------------------------"
-		}
-		echo ""
+			echo -e "# Starting command: ${COMMAND}"
+			echo "# ======================================"
+			for ((it=0; it<${REPEATS}; ++it)) {
+				echo "# Starting it: ${it} at: $(date)"
+				start=${SECONDS}
+				${COMMAND}
+				end=${SECONDS}
+				echo "# Ending: $(date)"
+				echo "# Elapsed: $((end-start))"
+				echo "# --------------------------------------"
+			}
+			echo ""
+		done
 	done
 done
 
