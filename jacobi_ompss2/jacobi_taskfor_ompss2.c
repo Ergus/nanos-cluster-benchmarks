@@ -290,6 +290,7 @@ int main(int argc, char* argv[])
 	create_reportable_int("worldsize", nanos6_get_num_cluster_nodes());
 	create_reportable_int("cpu_count", nanos6_get_num_cpus());
 	create_reportable_int("namespace_enabled", nanos6_get_namespace_is_enabled());
+	create_reportable_string("nanos6_version", nanos6_get_runtime_version());
 
 	report_args();
 	free_args();
