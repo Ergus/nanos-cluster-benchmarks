@@ -231,12 +231,12 @@ void cholesky_taskfor_ompss2(
 	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts],
 	int prvanim
 ) {
+	printf("# cholesky taskfor\n");
+
 	const size_t dim = pinfo->nt * pinfo->ts;
 	const size_t nt = pinfo->nt;
 	const size_t ts = pinfo->ts;
 	const size_t np = pinfo->np;
-
-	printf("# cholesky taskfor\n");
 
 	// Try a copy to trick mercurium.
 	const struct matrix_info info = *pinfo;

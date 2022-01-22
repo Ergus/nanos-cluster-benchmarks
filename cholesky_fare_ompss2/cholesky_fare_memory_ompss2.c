@@ -177,12 +177,12 @@ void cholesky_memory_ompss2(
 	const struct matrix_info *pinfo,
 	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
 ) {
+	printf("# cholesky memory\n");
+
 	const size_t dim = pinfo->nt * pinfo->ts;
 	const size_t nt = pinfo->nt;
 	const size_t ts = pinfo->ts;
 	const size_t np = pinfo->np;
-
-	printf("# cholesky memory\n");
 
 	// Try a copy to trick mercurium.
 	const struct matrix_info info = *pinfo;
