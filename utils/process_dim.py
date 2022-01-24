@@ -26,7 +26,7 @@ import json
 re_comment = re.compile('^#(?P<next> -+$)?(?P<report> =+$)?')
 
 re_pair = re.compile('^(?P<key>\w+): (?P<value>.+)$')   # KEY: value
-re_number = re.compile('^(?P<number>\d+(?P<float>\.\d+(e\+\d+)?)?)$') # KEY: number
+re_number = re.compile('^(?P<number>\d+(?P<float>(\.\d+)?(e\+\d+)?)?)$') # KEY: number
 re_string = re.compile('^"(?P<string>.+?)"$') # KEY: "string"
 
 
