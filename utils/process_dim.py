@@ -70,7 +70,8 @@ def process_file(input_file):
     count :int = 0
 
     for line in input_file:
-        if match := re_comment.match(line): # Commented lines
+        match = re_comment.match(line)
+        if match: # Commented lines
             if match.group('next'):         # -------------- repetition
                 count = count + 1
             elif match.group('report'):     # ============== end group
@@ -81,19 +82,23 @@ def process_file(input_file):
             continue
 
         # A pair value is always attached.
-        if pair := re_pair.match(line):
+        pair = re_pair.match(line)
+        if pair:
             key :str = pair.group('key')
             strvalue :str = pair.group('value')
 
-            if match := re_number.match(strvalue):
+            match = re_number.match(strvalue)
+            if match:
                 if match.group('float'):              # it is a float so will be averaged later
                     value :float = float(match.group('number'))
                 else:                                  # it is a key so will be used as a key/info
                     value :int = int(match.group('number'))
-            elif match := re_string.match(strvalue):
-                value :str = match.group('string')    # remove the " around string
             else:
-                sys.exit("Value type with unknown regex: " + str(strvalue))
+                match = re_string.match(strvalue)
+                if match:
+                    value :str = match.group('string')    # remove the " around string
+                else:
+                    sys.exit("Value type with unknown regex: " + str(key) + " = " + str(strvalue))
 
             # Create or append
             line_dict.setdefault(key, []).append(value)
