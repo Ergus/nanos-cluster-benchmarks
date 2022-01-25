@@ -49,29 +49,26 @@ foreach (TYPEID 0;1)
 
 endforeach ()
 
-# Taskfor
-set(executable "cholesky_fare_ompss2_taskfor")
-message("- Add benchmark: ${executable}")
-add_executable(${executable} "${executable}.c")
-target_link_options(${executable} PUBLIC ${BLAS_LINKER_FLAGS})
-target_link_libraries(${executable} ${BLAS_LIBRARIES} argparser)
+#======= cholesky_fare optimized versions ==========
+SET(TESTTYPE memory taskfor)
+foreach (TYPEID 0;1)
+  list(GET TESTTYPE ${TYPEID} TYPE)
+  set(executable "cholesky_fare_${TYPE}_ompss2")
 
-add_test(NAME Test_${executable}
-  COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16)
-set_tests_properties(Test_${executable} PROPERTIES
-  ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+  message("- Add benchmark: ${executable}")
+  add_executable(${executable} "${executable}.c")
 
-set(executable "cholesky_memory_ompss2")
-message("- Add benchmark: ${executable}")
-add_executable(${executable} "${executable}.c")
-target_link_options(${executable} PUBLIC ${BLAS_LINKER_FLAGS})
-target_link_libraries(${executable} ${BLAS_LIBRARIES} argparser)
+  target_link_options(${executable} PUBLIC ${BLAS_LINKER_FLAGS})
+  target_link_libraries(${executable} ${BLAS_LIBRARIES} argparser)
 
-add_test(NAME Test_${executable}
-  COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16)
-set_tests_properties(Test_${executable} PROPERTIES
-  ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+  add_test(NAME Test_${executable}
+    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16)
+  set_tests_properties(Test_${executable} PROPERTIES
+    ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
 
+endforeach ()
+
+# ==============================================
 # submiter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
