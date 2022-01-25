@@ -37,7 +37,9 @@ void init_AB_taskfor(double *A, double *B, const size_t dim, size_t ts)
 		{
 			#pragma oss task for out(A[i * dim; rowsPerNode * dim])		\
 				out(B[i; rowsPerNode])									\
-				firstprivate(ts) chunksize(ts) label("init_AB_taskfor")
+				firstprivate(ts) chunksize(ts)							\
+				node(nanos6_cluster_no_offload)							\
+				label("init_AB_taskfor")
 			for (size_t j = i; j < i + rowsPerNode; ++j) { // loop tasks
 
 				struct drand48_data drand_buf;
@@ -82,7 +84,9 @@ void init_x_taskfor(double *x, const size_t dim, size_t ts, double val)
 			firstprivate(ts) wait label("init_vec_weak")
 		{
 			#pragma oss task for out(x[i; rowsPerNode])					\
-				firstprivate(ts) chunksize(ts) label("init_vec_taskfor")
+				firstprivate(ts) chunksize(ts)							\
+				node(nanos6_cluster_no_offload)							\
+				label("init_vec_taskfor")
 			for (size_t j = i; j < i + rowsPerNode; ++j) { // loop tasks
 				x[j] = val;
 			}
@@ -109,7 +113,9 @@ void jacobi_modify_taskfor(double *A, double *b, size_t dim, size_t ts)
 		{
 			#pragma oss task for inout(A[i * dim; rowsPerNode * dim])	\
 				inout(b[i; rowsPerNode])								\
-				firstprivate(ts) chunksize(ts) label("jacobi_modify_taskfor")
+				firstprivate(ts) chunksize(ts)							\
+				node(nanos6_cluster_no_offload)							\
+				label("jacobi_modify_taskfor")
 			for (size_t j = i; j < i + rowsPerNode; ++j) { // loop tasks
 				const double iAjj = 1 / fabs(A[j * dim + j]);
 
@@ -175,7 +181,7 @@ void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
                     size_t nchunks, size_t dim, size_t it
 ) {
 	if (it == 0){
-		printf("# matvec_taskfor TASKFOR\n");
+		printf("# jacobi_taskfor TASKFOR\n");
 	}
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
@@ -204,13 +210,15 @@ void jacobi_taskfor(const double *A, const double *B, double *xin, double *xout,
 			weakin(B[i; rowsPerNode])									\
 			weakout(xout[i; rowsPerNode])								\
 			node(nodeid)												\
-			firstprivate(ts) wait label("weakjacobi_taskfor")
+			firstprivate(ts) wait label("weakjacobi_task")
 		{
 			#pragma oss task for in(A[i * dim; rowsPerNode * dim])	\
 				in(xin[0; dim])											\
 				in(B[i; rowsPerNode])									\
 				out(xout[i; rowsPerNode])								\
-				firstprivate(ts) chunksize(ts) label("jacobi_taskfor")
+				firstprivate(ts) chunksize(ts)							\
+				node(nanos6_cluster_no_offload)							\
+				label("jacobi_taskfor")
 			for (size_t j = i; j < i + rowsPerNode; ++j) {
 				inst_event(9910002, dim);
 
