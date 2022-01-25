@@ -74,8 +74,8 @@ foreach (ISMATVEC 0;1)
   endforeach ()
 
   # Strong
-  SET(STRONGLIST ignore flat interleave nested)
-  foreach (STRONGTYPE 1;2;3)
+  SET(STRONGLIST ignore flat nested)
+  foreach (STRONGTYPE 1;2)
     list(GET STRONGLIST ${STRONGTYPE} STRONGSUFIX)
 
     # Executable

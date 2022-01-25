@@ -159,31 +159,6 @@ void matvec_tasks(const double *A, const double *B, double *C,
                   size_t ts, size_t dim, size_t colsBC, size_t it
 ) {
 	if (it == 0)
-		printf("# matvec_strong_interleave\n");
-
-	myassert(ts <= dim);
-	modcheck(dim, ts);
-
-	const size_t numNodes = nanos6_get_num_cluster_nodes();
-
-	for (size_t i = 0; i < dim; i += ts) {
-		int nodeid = i % numNodes;
-
-		#pragma oss task in(A[i * dim; ts * dim]) \
-			in(B[0; dim * colsBC])				  \
-			out(C[i * colsBC; ts * colsBC])		  \
-			node(nodeid) label("strongmatvec")
-		matmul_base(&A[i * dim], B, &C[i * colsBC], ts, dim, colsBC);
-	}
-}
-
-
-#elif ISSTRONG == 3 // nested strong
-
-void matvec_tasks(const double *A, const double *B, double *C,
-                  size_t ts, size_t dim, size_t colsBC, size_t it
-) {
-	if (it == 0)
 		printf("# matvec_strong_nested\n");
 
 	myassert(ts <= dim);
