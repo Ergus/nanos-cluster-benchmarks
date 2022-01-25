@@ -173,7 +173,7 @@ void cholesky_single(
 	} // for k
 }
 
-void cholesky_ompss2(
+void cholesky_memory_ompss2(
 	const struct matrix_info *pinfo,
 	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
 ) {
@@ -182,7 +182,7 @@ void cholesky_ompss2(
 	const size_t ts = pinfo->ts;
 	const size_t np = pinfo->np;
 
-	printf("# cholesky weak\n");
+	printf("# cholesky memory\n");
 
 	// Try a copy to trick mercurium.
 	const struct matrix_info info = *pinfo;
@@ -339,7 +339,7 @@ int main(int argc, char *argv[])
 	printf("# Starting warmup\n");
 
 	timer atimer_warmup = create_timer("Warmup_time");
-	cholesky_ompss2(&info, A);
+	cholesky_memory_ompss2(&info, A);
 	#pragma oss taskwait
 
 	stop_timer(&atimer_warmup);
@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
 	printf("# Starting algorithm\n");
 
 	timer atimer = create_timer("Algorithm_time");
-	cholesky_ompss2(&info, A);
+	cholesky_memory_ompss2(&info, A);
 	#pragma oss taskwait
 
 	stop_timer(&atimer);

@@ -226,7 +226,7 @@ inline int max(int x, int y)
 	return (x < y) ? y : x;
 }
 
-void cholesky_ompss2(
+void cholesky_taskfor_ompss2(
 	const struct matrix_info *pinfo,
 	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts],
 	int prvanim
@@ -236,7 +236,7 @@ void cholesky_ompss2(
 	const size_t ts = pinfo->ts;
 	const size_t np = pinfo->np;
 
-	printf("# cholesky weak\n");
+	printf("# cholesky taskfor\n");
 
 	// Try a copy to trick mercurium.
 	const struct matrix_info info = *pinfo;
@@ -470,7 +470,7 @@ int main(int argc, char *argv[])
 	printf("# Starting warmup\n");
 
 	timer atimer_warmup = create_timer("Warmup_time");
-	cholesky_ompss2(&info, A, 0);
+	cholesky_taskfor_ompss2(&info, A, 0);
 	#pragma oss taskwait
 
 	stop_timer(&atimer_warmup);
@@ -515,7 +515,7 @@ int main(int argc, char *argv[])
 	// ===========================================
 	printf("# Starting algorithm\n");
 	timer atimer = create_timer("Algorithm_time");
-	cholesky_ompss2(&info, A, 1);
+	cholesky_taskfor_ompss2(&info, A, 1);
 	#pragma oss taskwait
 
 	stop_timer(&atimer);
