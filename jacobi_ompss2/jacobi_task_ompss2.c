@@ -140,11 +140,12 @@ void jacobi_modify_task(double *A, double *b, size_t dim, size_t ts)
 	}
 }
 
-void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
-                  size_t ts, size_t dim, size_t it
+void jacobi_tasks_ompss2(const double *A, const double *B,
+                         double *xin, double *xout,
+                         size_t ts, size_t dim, size_t it
 ) {
 	if (it == 0) {
-		printf("# matvec_tasks_node FETCHTASK=%d\n", FETCHTASK);
+		printf("# jacobi tasks FETCHTASK=%d\n", FETCHTASK);
 	}
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
@@ -240,7 +241,7 @@ int main(int argc, char* argv[])
 		xin = (i % 2 == 0) ? x1 : x2;
 		xout = (i % 2 == 0) ? x2 : x1;
 
-		jacobi_tasks(A, B, xin, xout, TS, ROWS, i);
+		jacobi_tasks_ompss2(A, B, xin, xout, TS, ROWS, i);
 	}
 	#pragma oss taskwait
 
