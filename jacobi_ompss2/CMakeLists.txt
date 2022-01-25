@@ -31,14 +31,14 @@ add_custom_command(
 add_library(base STATIC libbase.o)
 
 SET(FETCHLIST nofetch fetchall)
-foreach (FETCHTASK 0;1)
-  list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
+foreach (FETCHID 0;1)
+  list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
 
-  set(EXECUTABLE "${TEST}_${FETCHSUFIX}")
+  set(EXECUTABLE "${TEST}_task_${FETCHSUFIX}_ompss2")
   message("- Add benchmark: ${EXECUTABLE}")
 
   add_executable(${EXECUTABLE} jacobi_task_ompss2.c)
-  target_compile_definitions(${EXECUTABLE} PUBLIC -DFETCHTASK=${FETCHTASK})
+  target_compile_definitions(${EXECUTABLE} PUBLIC FETCHTASK=${FETCHID})
   target_link_libraries(${EXECUTABLE} argparser base)
 
   add_test(NAME Test_${EXECUTABLE}
@@ -48,7 +48,7 @@ foreach (FETCHTASK 0;1)
 endforeach ()
 
 # jacobi taskfor
-set(EXECUTABLE "${TEST}_taskfor")
+set(EXECUTABLE "${TEST}_taskfor_ompss2")
 message("- Add benchmark: ${EXECUTABLE}")
 
 add_executable(${EXECUTABLE} jacobi_taskfor_ompss2.c)

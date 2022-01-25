@@ -18,17 +18,9 @@
 
 #include "jacobi_ompss2.h"
 
-#ifdef FETCHTASK
-#if FETCHTASK == 0
-#define THECOND 0
-#elif FETCHTASK == 1
-#define THECOND 1
-#else  // FETCHTASK
-#error FETCHTASK value not valid.
+#if FETCHTASK > 1
+#error FETCH_TASK value not valid.
 #endif // FETCHTASK
-#else
-#error Not FETCHTASK or FETCHTASKFOR defined.
-#endif
 
 void init_AB_task(double *A, double *B, const size_t dim, size_t ts)
 {
@@ -151,8 +143,9 @@ void jacobi_modify_task(double *A, double *b, size_t dim, size_t ts)
 void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
                   size_t ts, size_t dim, size_t it
 ) {
-	if (it == 0)
-		printf("# matvec_tasks_node FETCHTASK %d\n", FETCHTASK);
+	if (it == 0) {
+		printf("# matvec_tasks_node FETCHTASK=%d\n", FETCHTASK);
+	}
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
 	myassert(ts <= dim);
@@ -176,9 +169,10 @@ void jacobi_tasks(const double *A, const double *B, double *xin, double *xout,
 			weakin(xin[0; dim])											\
 			weakin(B[i; rowsPerNode])									\
 			weakout(xout[i; rowsPerNode])								\
-			node(nodeid) wait label("weakjacobi")
+			node(nodeid)												\
+			firstprivate(ts) wait label("weakjacobi_task")
 		{
-			if (THECOND) {
+			if (FETCHTASK) {
 				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
 					in(xin[0; dim])										\
 					in(B[i; rowsPerNode])								\
