@@ -173,15 +173,15 @@ void jacobi_tasks_ompss2(const double *A, const double *B,
 			node(nodeid)												\
 			firstprivate(ts) wait label("weakjacobi_task")
 		{
-			if (FETCHTASK) {
-				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
-					in(xin[0; dim])										\
-					in(B[i; rowsPerNode])								\
-					out(xout[i; rowsPerNode])							\
-					node(nanos6_cluster_no_offload) label("fetchtask")
-				{
-				}
+#if FETCHTASK == 1
+			#pragma oss task in(A[i * dim; rowsPerNode * dim])			\
+				in(xin[0; dim])											\
+				in(B[i; rowsPerNode])									\
+				out(xout[i; rowsPerNode])								\
+				node(nanos6_cluster_no_offload) label("fetchtask")
+			{
 			}
+#endif // FETCHTASK
 
 			for (size_t j = i; j < i + rowsPerNode; j += ts) {
 				#pragma oss task in(A[j * dim; ts * dim])				\
