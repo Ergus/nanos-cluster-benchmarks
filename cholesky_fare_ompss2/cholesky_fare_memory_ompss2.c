@@ -48,38 +48,6 @@ size_t get_block_global_index(const struct matrix_info *info, size_t i, size_t j
 }
 
 
-/* void print_matrix_task( */
-/* 	size_t nt, size_t ts, */
-/* 	double A[nt * nt][ts][ts], */
-/* 	int nodeid */
-/* 	const struct matrix_info info, */
-/* ) { */
-/* 	size_t nt = info.nt; */
-/* 	size_t ts = info.ts; */
-
-/* 	#pragma oss task in(A[0:nt][0:nt][0;ts][0;ts]) in(info[0]) \ */
-/* 		node(nodeid) label("print_matrix") */
-/* 	{ */
-/* 		for (size_t i = 0; i < nt; i++) { */
-/* 			for (size_t k = 0; k < ts; ++k) { */
-/* 				for (size_t j = 0; j < nt; ++j) { */
-/* 					const size_t idx = get_block_global_index(info, i, j); */
-/* 					double lA[ts][ts] = A[idx]; */
-
-/* 					for (size_t l = 0; l < ts; ++l) { */
-/* 						printf("%5.2f ", (float)lA[k][l]); */
-/* 					} */
-/* 					printf(" "); */
-/* 				} */
-/* 				printf("\n"); */
-/* 			} */
-/* 			printf(" \n"); */
-/* 		} */
-/* 		printf("--------\n"); */
-/* 		fflush(stdout); */
-/* 	} */
-/* } */
-
 void get_block_info(int ROWS, int TS, struct matrix_info *info)
 {
 	info->nt = ROWS / TS;
