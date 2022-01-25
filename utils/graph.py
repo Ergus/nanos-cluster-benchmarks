@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import matplotlib.pyplot as plt
 import sys, os
 import json
 import pandas as pd
@@ -23,6 +22,12 @@ import numpy as np
 import pprint
 import pickle
 from typing import *
+
+import matplotlib.pyplot as plt
+
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.style'] = 'normal'
+plt.rcParams['font.size'] = '8'
 
 
 def save_all_files(filename: str, fig):
@@ -45,8 +50,25 @@ def save_all_files(filename: str, fig):
                 #bbox_extra_artists=[leg],
                 bbox_inches='tight')
 
+def add_lines(ax, dt_ts , column : str, label: str):
+    "Add raw data graph"
+    if dt_ts.empty:
+        print("Ignoring: ", label)
+        return
 
-def add_lines_and_scale(ax1, ax2, dt_ts , column : str, label: str):
+    dt_sorted = dt_ts.sort_values(by=['worldsize'])
+    x = dt_sorted['worldsize']
+
+    if dt_sorted[x == 1].empty:
+        print("No single node for : ", label)
+        return
+
+    y = dt_sorted[column]
+    erry = dt_sorted[column+'_stdev'].divide(dt_sorted['executions']**(1/2))
+
+    ax.errorbar(x, y, yerr = erry, fmt = 'o-', linewidth=0.75, markersize=2, label=label)
+
+def add_scalability(ax, dt_ts , column : str, label: str):
     """Add lines to the graphs."""
     if dt_ts.empty:
         print("Ignoring: ", label)
@@ -60,23 +82,25 @@ def add_lines_and_scale(ax1, ax2, dt_ts , column : str, label: str):
         print("No single node for : ", label)
         return
 
-    # Time graph
-    y = dt_sorted[column]
-    erry = dt_sorted[column+'_stdev'].divide(dt_sorted['executions']**(1/2))
-
-    ax1.errorbar(x, y, erry, fmt ='o-', label=label)
-
     one : float = row_one[column].values[0]
     errone : float = (row_one[column+'_stdev'] / (row_one['executions']**(1/2))).values[0]
 
-    # Scalability
+    # Error
+    y = dt_sorted[column]
+    erry = dt_sorted[column+'_stdev'].divide(dt_sorted['executions']**(1/2))
+
     sy = one / dt_sorted[column]
     errsy = sy * (erry/y + errone/one)
 
-    ax2.errorbar(x, sy, errsy, fmt ='o-', label=label)
+    ax.errorbar(x, sy, errsy, fmt ='o-', linewidth=1, markersize=2, label=label)
 
 
-def process_tasksize(data, keyslist:list, rows:int, ts:int, cpu_count:int, column:str):
+def process_tasksize(data,
+                     keyslist:list,
+                     rows:int,
+                     ts:int,
+                     cpu_count:int,
+                     column:str):
     """Create graphs time vs tasksize"""
 
     fig = plt.figure()
@@ -106,13 +130,15 @@ def process_tasksize(data, keyslist:list, rows:int, ts:int, cpu_count:int, colum
                     (dt_key['cpu_count'] == cpu_count)]
 
         if key.endswith("mpi"):
-            add_lines_and_scale(ax1, ax2, dt, column, label)
+            add_lines(ax1, dt, column, label)
+            add_scalability(ax2, dt, column, label)
         else:
             for ns in range(2):
                 dt_ns = dt[(dt['namespace_enabled'] == ns)]
                 labelns = label + [" nons", " ns"][ns]
 
-                add_lines_and_scale(ax1, ax2, dt_ns, column, labelns)
+                add_lines(ax1, dt_ns, column, labelns)
+                add_scalability(ax2, dt_ns, column, labelns)
 
     plt.legend(bbox_to_anchor=(1,1),
                loc='center left',
@@ -136,43 +162,64 @@ def process_tasksize(data, keyslist:list, rows:int, ts:int, cpu_count:int, colum
 def process_experiment(data, key:str,
                        rows:int,
                        ts_vals_list:list[int],
-                       cpu_count:int,
+                       cpu_count_list:list[int],
                        column:str):
     """Create graphs comparing all the TS for same size and num_cpus"""
 
     fig = plt.figure()
-    gs = fig.add_gridspec(2, hspace=0)
-    (ax1, ax2) = gs.subplots(sharex=True, sharey=False)
-
-    ax1.set_ylabel(column)
-    ax1.grid(color='b', ls = '-.', lw = 0.25)
-
-    ax2.set_xlabel('Nodes')
-    ax2.set_ylabel("Scalability")
-    ax2.grid(color='b', ls = '-.', lw = 0.25)
+    gs = fig.add_gridspec(nrows=3, ncols=(len(cpu_count_list)), hspace=0, wspace=0)
+    ax = gs.subplots(sharex=True, sharey="row")
 
     # Title
-    fig.suptitle(key + " " + str(rows) + " (" + str(cpu_count) + " cores)")
+    fig.suptitle(key + " " + str(rows))
 
     dt_key = data[key]
 
-    for ts in ts_vals_list:
-        # "cholesky_memory_ompss2" -> "memory ompss2"
-        label : str = str(ts)
+    nodes_list : list[int] = data[key]['worldsize'].drop_duplicates().sort_values().array
 
-        dt = dt_key[(dt_key['Rows'] == rows) & \
-                    (dt_key['Tasksize'] == ts) & \
-                    (dt_key['cpu_count'] == cpu_count)]
+    for i in range(len(cpu_count_list)):
 
-        if key.endswith("mpi"):
-            dt_mpi = dt
-            add_lines_and_scale(ax1, ax2, dt_mpi, column, label)
-        else:
-            for ns in range(2):
-                dt_ns = dt[(dt['namespace_enabled'] == ns)]
-                labelns = label + [" nons", " ns"][ns]
+        cpu_count : int = cpu_count_list[i]
+        ax1 = ax[0, i]
+        ax2 = ax[1, i]
+        ax3 = ax[2, i]
 
-                add_lines_and_scale(ax1, ax2, dt_ns, column, labelns)
+        if (i == 0):
+            ax1.set_ylabel("Time")
+            ax2.set_ylabel("Time (log)")
+            ax3.set_ylabel("Scalability")
+
+        ax1.title.set_text(str(cpu_count) + "cores")
+        ax2.set_yscale('log')
+        ax3.set_xlabel('Nodes')
+
+        ax1.grid(color='b', ls = '-.', lw = 0.25)
+        ax1.set_xticks(nodes_list)
+        ax2.grid(color='b', ls = '-.', lw = 0.25)
+        ax3.grid(color='b', ls = '-.', lw = 0.25)
+
+        for ts in ts_vals_list:
+            # "cholesky_memory_ompss2" -> "memory ompss2"
+            label : str = str(ts)
+
+            dt = dt_key[(dt_key['Rows'] == rows) & \
+                        (dt_key['Tasksize'] == ts) & \
+                        (dt_key['cpu_count'] == cpu_count)]
+
+            if key.endswith("mpi"):
+                add_lines(ax1, dt, column, label)
+                add_lines(ax2, dt, column, label)
+                add_scalability(ax3, dt, column, label)
+            else:
+                for ns in range(2):
+                    dt_ns = dt[(dt['namespace_enabled'] == ns)]
+                    labelns = label + [" nons", " ns"][ns]
+
+                    add_lines(ax1, dt_ns, column, labelns)
+                    add_lines(ax2, dt_ns, column, labelns)
+                    add_scalability(ax3, dt_ns, column, labelns)
+
+    plt.subplots_adjust()
 
     plt.legend(bbox_to_anchor=(1,1),
                loc='center left',
@@ -181,11 +228,7 @@ def process_experiment(data, key:str,
 
     # Save image file.
     # Save image file.
-    filename = "Compare_" \
-        + column + "_" \
-        + key + "_" \
-        + str(rows) + "_" \
-        + str(cpu_count)
+    filename = "Compare_" + column + "_" + key + "_" + str(rows)
 
     save_all_files(filename, fig)
 
@@ -197,25 +240,24 @@ def process_experiment(data, key:str,
 def process_all(data):
     """Create all the blocksize graphs"""
 
-    keys : list = list(data.keys());
-    first_dt = data[keys[0]]
+    keys_list : list[str] = list(data.keys());
+    first_dt = data[keys_list[0]]
 
     # Get all the keys
-    rows_vals : list = first_dt['Rows'].drop_duplicates()
-    ts_vals : list = first_dt['Tasksize'].drop_duplicates()
-    cpu_counts : list = first_dt['cpu_count'].drop_duplicates()
+    rows_list : list[int] = first_dt['Rows'].drop_duplicates().sort_values().array
+    ts_list : list[int] = first_dt['Tasksize'].drop_duplicates().sort_values().array
+    cpu_list : list[int] = first_dt['cpu_count'].drop_duplicates().sort_values().array
 
     # All benchmarks
-    for row in rows_vals:
-        for ts in ts_vals:
-            for cpu_count in cpu_counts:
-                process_tasksize(data, keys, row, ts, cpu_count, "Algorithm_time")
+    for row in rows_list:
+        for ts in ts_list:
+            for cpu_count in cpu_list:
+                process_tasksize(data, keys_list, row, ts, cpu_count, "Algorithm_time")
 
     # All ts for same experiment.
-    for key in keys:
-        for row in rows_vals:
-            for cpu_count in cpu_counts:
-                process_experiment(data, key, row, ts_vals, cpu_count, "Algorithm_time")
+    for key in keys_list:
+        for row in rows_list:
+            process_experiment(data, key, row, ts_list, cpu_list, "Algorithm_time")
 
 
 if __name__ == "__main__":
