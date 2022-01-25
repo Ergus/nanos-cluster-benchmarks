@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
-  # install (copy) scripts
   configure_file(validate.py validate.py @ONLY)
 else ()
   message("Python interpreter not found")
@@ -25,6 +24,7 @@ function(create_test_pair executable)
   # Execution test
   add_test(NAME Test_${executable}
     COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
+
   # Create FIXTURES_SETUP for Test_${executable}
   set_tests_properties(Test_${executable} PROPERTIES
     ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
@@ -50,41 +50,35 @@ SET(TESTLIST matmul matvec) # The order is important
 foreach (ISMATVEC 0;1)
   list(GET TESTLIST ${ISMATVEC} TEST)
 
-  # weak tests.
-  SET(FETCHLIST nofetch fetchall fetchfirst taskfor) # fetch
-  foreach (FETCHTASK 0;1;2;3)
-    list(GET FETCHLIST ${FETCHTASK} FETCHSUFIX)
-
-    SET(NODELIST nonode node) # node clause
-    foreach (WITH_NODE 0;1)
-      list(GET NODELIST ${WITH_NODE} NODESUFIX)
-
-      set(executable "${TEST}_weak_${FETCHSUFIX}_${NODESUFIX}")
-      message("- Add benchmark: ${executable}")
-      add_executable(${executable} matmul_ompss2.c)
-      target_compile_definitions(${executable}
-	PUBLIC -DISSTRONG=0
-	PUBLIC -DFETCHTASK=${FETCHTASK}
-	PUBLIC -DWITH_NODE=${WITH_NODE}
-	PUBLIC -DISMATVEC=${ISMATVEC})
-      target_link_libraries(${executable} argparser)
-
-      create_test_pair(${executable})
-    endforeach ()
-  endforeach ()
-
   # Strong
-  SET(STRONGLIST ignore flat nested)
-  foreach (STRONGTYPE 1;2)
-    list(GET STRONGLIST ${STRONGTYPE} STRONGSUFIX)
+  SET(TASKTYPELIST strong_flat_task strong_nested_task weak_taskfor)
+  foreach (TASKTYPEID 0;1;2)
+    list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPESUFIX)
 
     # Executable
-    set(executable "${TEST}_strong_${STRONGSUFIX}")
+    set(executable "${TEST}_${TASKTYPESUFIX}_ompss2")
     message("- Add benchmark: ${executable}")
     add_executable(${executable} matmul_ompss2.c)
     target_compile_definitions(${executable}
-      PUBLIC -DISSTRONG=${STRONGTYPE}
-      PUBLIC -DISMATVEC=${ISMATVEC})
+      PUBLIC TASKTYPE=${TASKTYPEID}
+      PUBLIC ISMATVEC=${ISMATVEC})
+    target_link_libraries(${executable} argparser)
+
+    create_test_pair(${executable})
+  endforeach ()
+
+  # weak tests.
+  SET(FETCHLIST weak_nofetch_task weak_fetchall_task) # fetch
+  foreach (FETCHID 0;1)
+    list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
+
+    set(executable "${TEST}_${FETCHSUFIX}_ompss2")
+    message("- Add benchmark: ${executable}")
+    add_executable(${executable} matmul_ompss2.c)
+    target_compile_definitions(${executable}
+      PUBLIC TASKTYPE=3
+      PUBLIC ISMATVEC=${ISMATVEC}
+      PUBLIC FETCHTASK=${FETCHID})
     target_link_libraries(${executable} argparser)
 
     create_test_pair(${executable})
