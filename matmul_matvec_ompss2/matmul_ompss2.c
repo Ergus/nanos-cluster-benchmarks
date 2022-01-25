@@ -88,15 +88,18 @@ void matvec_tasks(const double *A, const double *B, double *C,
 #else // FETCHTASK < 3 (task for test)
 
 void matvec_tasks(const double *A, const double *B, double *C,
-                  size_t ts, size_t dim, size_t colsBC, size_t it
+                  size_t nchunks, size_t dim, size_t colsBC, size_t it
 ) {
-	if (it == 0)
+	if (it == 0) {
 		printf("# matvec_taskfor \n");
-
-	myassert(ts <= dim);
-	modcheck(dim, ts);
+	}
 
 	const size_t numNodes = nanos6_get_num_cluster_nodes();
+	myassert(nchunks <= dim);
+	modcheck(dim, nchunks);
+
+	const size_t ts = dim / numNodes / nchunks;
+	myassert(ts * numNodes * nchunks == dim);
 
 	const size_t rowsPerNode = dim / numNodes;
 	myassert(ts <= rowsPerNode);
@@ -113,12 +116,15 @@ void matvec_tasks(const double *A, const double *B, double *C,
 		#pragma oss task weakin(A[i * dim; rowsPerNode * dim])			\
 			weakin(B[0; dim * colsBC])									\
 			weakout(C[i * colsBC; rowsPerNode * colsBC])				\
-			node(nodeid) label("weakmatvec")
+			node(nodeid)												\
+			firstprivate(ts) label("weakmatvec_task")
 		{
 			#pragma oss task for in(A[i * dim; rowsPerNode * dim])		\
 				in(B[0; dim * colsBC])									\
 				out(C[i * colsBC; rowsPerNode * colsBC])				\
-				node(nanos6_cluster_no_offload) label("taskformatvec")
+				firstprivate(ts) chunksize(ts)							\
+				node(nanos6_cluster_no_offload)							\
+				label("taskfor_matvec")
 			for (size_t j = i; j < i + rowsPerNode; j += ts) {
 				matmul_base(&A[j * dim], B, &C[j * colsBC], ts, dim, colsBC);
 			}
