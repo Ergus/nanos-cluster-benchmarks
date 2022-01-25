@@ -37,7 +37,9 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if (CMAKE_BUILD_TYPE MATCHES ".*Debug.*")
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+endif()
 
 add_compile_definitions(_GNU_SOURCE)
 add_compile_options(--ompss-2 $<$<BOOL:WITH_KEEP>:-k>)
