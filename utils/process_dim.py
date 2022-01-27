@@ -21,12 +21,13 @@ from statistics import mean, stdev
 import json
 
 # Comments like: # Anything
-re_comment = re.compile('^#(?P<next> -+$)?(?P<report> =+$)?')
+re_comment = re.compile('^#(?P<next> -+$)?(?P<report> =+$)?(?P<done> Done:  .+$)?')
 
 re_pair = re.compile('^(?P<key>\w+): (?P<value>.+)$')   # KEY: value
-re_number = re.compile('^(?P<number>\d+(?P<float>(\.\d+)?(e\+\d+)?)?)$') # KEY: number
+re_number = re.compile('^(?P<number>\d+(?P<float>(\.\d+)?(e[+-]\d+)?)?)$') # KEY: number
 re_string = re.compile('^"(?P<string>.+?)"$') # KEY: "string"
 
+re_done = re.compile('')
 
 results = {}
 
@@ -45,11 +46,12 @@ def process_group(a_dict):
         else:
             copydic["executions"] = count
 
-        # keys int and string
         if all(isinstance(i, (str, int)) for i in vals_list) :
+            # int and string are keys and should all be the same.
             assert all(i == vals_list[0] for i in vals_list), "Failed `all' instances!"
             copydic[key] = vals_list[0]
         elif all(isinstance(i, float) for i in vals_list) :  # Floats
+            # floats are values to average.
             copydic[key] = mean(vals_list)
             copydic[key + "_stdev"] = stdev(vals_list) if count > 1 else 0
         else:
@@ -62,14 +64,15 @@ def process_group(a_dict):
 
 
 def process_file(input_file):
-    """Process the files and print the data in json format."""
+    """Process the files and stores the data in a map."""
 
     line_dict :dict = {}
     count :int = 0
 
     for line in input_file:
+        # Commented lines
         match = re_comment.match(line)
-        if match: # Commented lines
+        if match:
             if match.group('next'):         # -------------- repetition
                 count = count + 1
             elif match.group('report'):     # ============== end group
@@ -77,6 +80,9 @@ def process_file(input_file):
                     process_group(line_dict)
                     line_dict = {}
                     count = 0
+            elif match.group('done'):
+                print("Fully executed!")
+                break
             continue
 
         # A pair value is always attached.
@@ -114,19 +120,21 @@ if __name__ == "__main__":
             # Process input
             for basename_in in [f for f in os.listdir(dirname) if f.endswith(".out")]:
                 fname_in = os.path.join(dirname, basename_in)
-                print("Processing:", fname_in)
+                print("Processing:", fname_in, end=' ')
                 try:
                     with open(fname_in) as fin:
                         process_file(fin)
+                    print("Ok")
                 except IOError:
-                    print("Couldn't read input:", fname_in)
+                    print("Couldn't read input:", fname_in, file = sys.stderr)
 
             # Write output
             fname_out = dirname.rstrip(os.sep)+".json"
-            print("Writing:", fname_out)
+            print("Writing:", fname_out, end=' ')
             try:
                 with open(fname_out, "w") as fout:
                     json.dump(results, fout, indent=4)
+                print("Ok")
             except IOError:
-                print("Couldn't write output")
+                print("Couldn't write output file", file = sys.stderr)
 
