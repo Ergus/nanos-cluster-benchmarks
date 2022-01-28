@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MATVEC_OMPSS2_H
-#define MATVEC_OMPSS2_H
+#ifndef JACOBI_BASE_H
+#define JACOBI_BASE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,4 +47,4 @@ extern "C" {
 }
 #endif
 
-#endif // MATVEC_OMPSS2_H
+#endif // JACOBI_BASE_H
