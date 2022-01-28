@@ -22,6 +22,46 @@
 
 #include "matmul_ompss2.h"
 
+#if ISMATVEC
+void matmul_base(const double *A, const double *B, double * const C,
+                 size_t ts, size_t dim, size_t colsBC
+) {
+	inst_event(9910002, dim);
+
+	for (size_t i = 0; i < ts; ++i) {
+		C[i] = 0.0;
+
+		for (size_t j = 0; j < dim; ++j) {
+			C[i] += A[i * dim + j] * B[j];
+		}
+	}
+
+	inst_event(9910002, 0);
+}
+#else
+void matmul_base(const double *A, const double *B, double * const C,
+                 size_t ts, size_t dim, size_t colsBC
+) {
+	(void) colsBC;
+
+	for (size_t i = 0; i < ts; ++i) {
+		for (size_t k = 0; k < colsBC; ++k)
+			C[i * colsBC + k] = 0.0;
+
+		inst_event(9910002, dim);
+		for (size_t j = 0; j < dim; ++j) {
+			const double temp = A[i * dim + j];
+
+			for (size_t k = 0; k < colsBC; ++k) {
+				C[i * colsBC + k] += (temp * B[j * colsBC + k]);
+			}
+		}
+		inst_event(9910002, 0);
+	}
+}
+#endif
+
+
 #if TASKTYPE == 0 // strong flat
 
 void matvec_tasks_ompss2(const double *A, const double *B, double *C,
@@ -172,7 +212,9 @@ void matvec_tasks_ompss2(const double *A, const double *B, double *C,
 					in(B[0; dim * colsBC])								\
 					out(C[j * colsBC; ts * colsBC])						\
 					node(nanos6_cluster_no_offload) label("strongmatvec")
-				matmul_base(&A[j * dim], B, &C[j * colsBC], ts, dim, colsBC);
+				{
+					matmul_base(&A[j * dim], B, &C[j * colsBC], ts, dim, colsBC);
+				}
 			}
 		}
 	}

@@ -29,24 +29,6 @@ extern "C" {
 		nanos6_dfree(mat, size * sizeof(double));
 	}
 
-
-	void matmul_base(const double *A, const double *B, double * const C,
-	                 size_t lrowsA, size_t dim, size_t colsBC
-	) {
-		for (size_t i = 0; i < lrowsA; ++i) {
-			for (size_t k = 0; k < colsBC; ++k)
-				C[i * colsBC + k] = 0.0;
-
-			for (size_t j = 0; j < dim; ++j) {
-				const double temp = A[i * dim + j];
-
-				for (size_t k = 0; k < colsBC; ++k) {
-					C[i * colsBC + k] += (temp * B[j * colsBC + k]);
-				}
-			}
-		}
-	}
-
 	bool validate(const double *A, const double *B, double *C,
 	              size_t dim, size_t colsBC
 	) {
