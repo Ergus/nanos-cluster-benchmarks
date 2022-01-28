@@ -46,47 +46,59 @@ function(create_test_pair executable)
 endfunction()
 
 # Create tests
-SET(TESTLIST matmul matvec) # The order is important
-foreach (ISMATVEC 0;1)
-  list(GET TESTLIST ${ISMATVEC} TEST)
+SET(NODELIST nonode node)
+foreach (NODEID 0;1)
+  list(GET NODELIST ${NODEID} NODESUFIX)
 
-  # Strong
-  SET(TASKTYPELIST strong_flat_task strong_nested_task weak_taskfor)
-  foreach (TASKTYPEID 0;1;2)
-    list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPESUFIX)
+  if ((NOT WITH_NONODE) AND (NODEID EQUAL 0))
+    message("-- Skipping no-node")
+    continue()
+  endif()
 
-    # Executable
-    set(executable "${TEST}_${TASKTYPESUFIX}_ompss2")
-    message("- Add benchmark: ${executable}")
-    add_executable(${executable} matmul_ompss2.c)
-    target_compile_definitions(${executable}
-      PUBLIC TASKTYPE=${TASKTYPEID}
-      PUBLIC ISMATVEC=${ISMATVEC})
-    target_link_libraries(${executable} argparser)
+  SET(TESTLIST matmul matvec) # The order is important
+  foreach (ISMATVEC 0;1)
+    list(GET TESTLIST ${ISMATVEC} TEST)
 
-    create_test_pair(${executable})
+    # Strong
+    SET(TASKTYPELIST strong_flat_task strong_nested_task weak_taskfor)
+    foreach (TASKTYPEID 0;1;2)
+      list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPESUFIX)
+
+      # Executable
+      set(executable "${TEST}_${TASKTYPESUFIX}_${NODESUFIX}_ompss2")
+      message("- Add benchmark: ${executable}")
+      add_executable(${executable} matmul_ompss2.c)
+      target_compile_definitions(${executable}
+	PUBLIC WITHNODE=${NODEID}
+	PUBLIC TASKTYPE=${TASKTYPEID}
+	PUBLIC ISMATVEC=${ISMATVEC})
+      target_link_libraries(${executable} argparser)
+
+      create_test_pair(${executable})
+    endforeach ()
+
+    # weak tests.
+    SET(FETCHLIST weak_nofetch_task weak_fetchall_task) # fetch
+    foreach (FETCHID 0;1)
+      list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
+
+      set(executable "${TEST}_${FETCHSUFIX}_${NODESUFIX}_ompss2")
+      message("- Add benchmark: ${executable}")
+      add_executable(${executable} matmul_ompss2.c)
+      target_compile_definitions(${executable}
+	PUBLIC TASKTYPE=3
+	PUBLIC WITHNODE=${NODEID}
+	PUBLIC ISMATVEC=${ISMATVEC}
+	PUBLIC FETCHTASK=${FETCHID})
+      target_link_libraries(${executable} argparser)
+
+      create_test_pair(${executable})
+    endforeach ()
+
+    configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
+    configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
+
   endforeach ()
-
-  # weak tests.
-  SET(FETCHLIST weak_nofetch_task weak_fetchall_task) # fetch
-  foreach (FETCHID 0;1)
-    list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
-
-    set(executable "${TEST}_${FETCHSUFIX}_ompss2")
-    message("- Add benchmark: ${executable}")
-    add_executable(${executable} matmul_ompss2.c)
-    target_compile_definitions(${executable}
-      PUBLIC TASKTYPE=3
-      PUBLIC ISMATVEC=${ISMATVEC}
-      PUBLIC FETCHTASK=${FETCHID})
-    target_link_libraries(${executable} argparser)
-
-    create_test_pair(${executable})
-  endforeach ()
-
-  configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
-  configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
-
 endforeach ()
 
 # Submit

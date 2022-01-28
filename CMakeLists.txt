@@ -32,6 +32,8 @@ option(WITH_EXTRAE "Build with Extrae traces support" false)
 cmake_dependent_option(WITH_PRVANIM "Build with PRVANIM" true "WITH_EXTRAE" false)
 option(WITH_KEEP "Keep mcc intermediate files" false)
 option(WITH_SERIAL "Build serial version of the code when available." false)
+option(WITH_NONODE "Build the code version without the node hint." false)
+
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
