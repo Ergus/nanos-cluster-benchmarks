@@ -24,7 +24,7 @@ import json
 re_comment = re.compile('^#(?P<next> -+$)?(?P<report> =+$)?(?P<done> Done:  .+$)?')
 
 re_pair = re.compile('^(?P<key>\w+): (?P<value>.+)$')   # KEY: value
-re_number = re.compile('^(?P<number>\d+(?P<float>(\.\d+)?(e[+-]\d+)?)?)$') # KEY: number
+re_number = re.compile('^(?P<number>[+-]?\d+(?P<float>(\.\d+)?([Ee][+-]\d+)?)?)$') # KEY: number
 re_string = re.compile('^"(?P<string>.+?)"$') # KEY: "string"
 
 re_done = re.compile('')
