@@ -27,33 +27,37 @@ add_argument -a N -l nodes -h "Number of nodes" -t list -d 1,2,4,8,16,32
 add_argument -a C -l cores -h "Number of cores per node" -t list -d 12,24,48
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
-add_argument -a B -l BS -h "Blocksize" -t int
+add_argument -a B -l BS -h "Blocksize" -t list
 add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 
 parse_args "$@"
 printargs "# "
 
-jobname="@TEST@_${ARGS[D]}_${ARGS[B]}_${ARGS[I]}"
+for BS in ${ARGS[B]}; do
 
-mkdir -p "results/${jobname}"
-echo "# Output directory: ${jobname}"
+	jobname="@TEST@_${ARGS[D]}_${BS}_${ARGS[I]}"
 
-echo "# List num ntasks: ${ARGS[N]}"
+	mkdir -p "results/${jobname}"
+	echo "# Output directory: ${jobname}"
 
-for ntask in ${ARGS[N]}; do
-	echo "# Submitting for ${ntask} task[s]"
+	echo "# List num ntasks: ${ARGS[N]}"
 
- 	sbatch --ntasks=${ntask} \
-		   --time=${ARGS[w]} \
-		   --qos=${ARGS[q]} \
- 		   --job-name="${jobname}/${ntask}" \
- 		   --output="results/%x_%j.out" \
- 		   --error="results/%x_%j.err" \
- 		   ./submit_@TEST@_dim.sh \
-		   -R ${ARGS[R]} \
-		   -D ${ARGS[D]} \
-		   -B ${ARGS[B]} \
-		   -I ${ARGS[I]} \
-		   -N ${ntask}   \
-		   -C ${ARGS[C]// /,}
-done
+	for ntask in ${ARGS[N]}; do
+		echo "# Submitting for ${ntask} task[s]"
+
+ 		sbatch --ntasks=${ntask} \
+			   --time=${ARGS[w]} \
+			   --qos=${ARGS[q]} \
+ 			   --job-name="${jobname}/${ntask}" \
+ 			   --output="results/%x_%j.out" \
+ 			   --error="results/%x_%j.err" \
+ 			   ./submit_@TEST@_dim.sh \
+			   -R ${ARGS[R]} \
+			   -D ${ARGS[D]} \
+			   -B ${BS} \
+			   -I ${ARGS[I]} \
+			   -N ${ntask}   \
+			   -C ${ARGS[C]// /,}
+	done # ntasks
+
+done # BS

@@ -56,7 +56,10 @@ if [ $((SLURM_JOB_NUM_NODES*BS<=DIM)) != 1 ]; then
 	exit
 fi
 
+EXE_TOTAL=$(ls @TEST@_* | wc -l)
+
 for EXE in @TEST@_*; do
+	echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXE_TOTAL}"
 	for NCORES in $CORES; do
 		for DISABLE_REMOTE in false true; do  # namespace enable/disable
 
@@ -69,15 +72,15 @@ for EXE in @TEST@_*; do
 
 			echo -e "# Starting command: ${COMMAND}"
 			echo "# ======================================"
-			for (( it=0; it<${REPEATS}; ++it )) {
-				echo "# Starting it: ${it} at: $(date)"
+			for it in $(seq ${REPEATS}); do
+				echo "# Starting it: ${it} $(date)"
 				start=${SECONDS}
 				${COMMAND}
 				end=${SECONDS}
 				echo "# Ending: $(date)"
-				echo "# Elapsed: $((end-start))"
+				echo "# Elapsed: $((end-start)) accumulated $((end-init))"
 				echo "# --------------------------------------"
-			}
+			done
 			echo ""
 		done
 	done
