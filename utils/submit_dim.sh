@@ -59,13 +59,17 @@ fi
 for EXE in @TEST@_*; do
 	for NCORES in $CORES; do
 		for DISABLE_REMOTE in false true; do  # namespace enable/disable
+
+			# Run only once for mpi benchmarks
+			[ $DISABLE_REMOTE == true ] && [ ${EXE##*_} == 'mpi' ] && continue
+
 			export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=${DISABLE_REMOTE}"
 
 			COMMAND="srun --ntasks=${NTASTS} taskset -c 0-$((NCORES - 1)) ./${EXE} $DIM $BS $ITS"
 
 			echo -e "# Starting command: ${COMMAND}"
 			echo "# ======================================"
-			for ((it=0; it<${REPEATS}; ++it)) {
+			for (( it=0; it<${REPEATS}; ++it )) {
 				echo "# Starting it: ${it} at: $(date)"
 				start=${SECONDS}
 				${COMMAND}
