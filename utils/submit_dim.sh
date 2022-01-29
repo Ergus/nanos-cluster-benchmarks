@@ -5,6 +5,14 @@
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=48
 
+#SBATCH --signal=B:SIGUSR1@120
+
+function got_signal() {
+	echo "# $(date): Got exit signal"
+}
+
+trap got_signal SIGUSR1
+
 # Declare command line arguments.
 # In this script there are not default values to prevent errors.
 source @PROJECT_BINARY_DIR@/argparse.sh
