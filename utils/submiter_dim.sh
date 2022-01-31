@@ -40,11 +40,13 @@ echo "# Submit time: $(date)" | tee -a ${logfile}
 
 printargs "# " | tee -a ${logfile}
 
+# Check that there are executables to run
 if [ -z "${ARGS[REST]}" ]; then
     echo "Error: No input executable provided ('ARGS[REST]' is empty)" >&2
     exit 1
 fi
 
+# Check all the files are executable
 for EXE in ${ARGS[REST]}; do
     if [ ! -x $EXE ]; then
         echo "Error: '$EXE' is not an executable file" >&2
@@ -79,6 +81,7 @@ for BS in ${ARGS[B]}; do
                         -C ${ARGS[C]// /,} \
                         ${ARGS[REST]} "
 
+        # Print and execute command
         echo ${command// +/ }
         ${command}
     done # ntasks

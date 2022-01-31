@@ -68,6 +68,7 @@ EXES=${ARGS[REST]}
 EXES_TOTAL=$(echo $EXES | wc -w)
 
 for EXE in ${EXES}; do
+	# Check that EXE exists and is an executable
 	if ![[ -x $EXE ]]; then
 		echo "# WARN: Input: ${EXE} is not an executable file"
 		continue
