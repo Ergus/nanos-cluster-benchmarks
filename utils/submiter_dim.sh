@@ -20,44 +20,68 @@ source @PROJECT_BINARY_DIR@/argparse.sh
 # Arguments for this script
 add_argument -a w -l wtime -h "Wall time limit for jobs" -t timer -d 12:00:00
 add_argument -a q -l queue -h "Cluster queue" -t enum -e debug,bsc_cs,xlarge -d bsc_cs
+add_argument -a o -l output -h "Output directory" -t string -d "results"
 
 # Arguments to bypass
 add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
 add_argument -a N -l nodes -h "Number of nodes" -t list -d 1,2,4,8,16,32
 add_argument -a C -l cores -h "Number of cores per node" -t list -d 12,24,48
 
+
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t list
 add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 
 parse_args "$@"
-printargs "# "
+
+mkdir -p "${ARGS[o]}"
+logfile="${ARGS[o]}/submit.log"
+echo "# Submit time: $(date)" | tee -a ${logfile}
+
+printargs "# " | tee -a ${logfile}
+
+if [ -z "${ARGS[REST]}" ]; then
+    echo "Error: No input executable provided ('ARGS[REST]' is empty)" >&2
+    exit 1
+fi
+
+for EXE in ${ARGS[REST]}; do
+    if [ ! -x $EXE ]; then
+        echo "Error: '$EXE' is not an executable file" >&2
+        exit 2
+    fi
+done
+
+echo "# List ntasks: [ ${ARGS[N]} ]"
 
 for BS in ${ARGS[B]}; do
 
-	jobname="@TEST@_${ARGS[D]}_${BS}_${ARGS[I]}"
+    jobname="@TEST@_${ARGS[D]}_${BS}_${ARGS[I]}"
 
-	mkdir -p "results/${jobname}"
-	echo "# Output directory: ${jobname}"
+    OUTDIR="${ARGS[o]}/${jobname}"
+    mkdir -p ${OUTDIR}
+    echo "# Output directory: ${OUTDIR}"
 
-	echo "# List num ntasks: ${ARGS[N]}"
+    for ntask in ${ARGS[N]}; do
 
-	for ntask in ${ARGS[N]}; do
-		echo "# Submitting for ${ntask} task[s]"
+        command="sbatch --ntasks=${ntask} \
+                        --time=${ARGS[w]} \
+                        --qos=${ARGS[q]} \
+                        --job-name="${jobname}/${ntask}" \
+                        --output="${ARGS[o]}/%x_%j.out" \
+                        --error="${ARGS[o]}/%x_%j.err" \
+                        ./submit_matvec_dim.sh \
+                        -R ${ARGS[R]} \
+                        -D ${ARGS[D]} \
+                        -B ${BS} \
+                        -I ${ARGS[I]} \
+                        -N ${ntask}   \
+                        -C ${ARGS[C]// /,} \
+                        ${ARGS[REST]} "
 
- 		sbatch --ntasks=${ntask} \
-			   --time=${ARGS[w]} \
-			   --qos=${ARGS[q]} \
- 			   --job-name="${jobname}/${ntask}" \
- 			   --output="results/%x_%j.out" \
- 			   --error="results/%x_%j.err" \
- 			   ./submit_@TEST@_dim.sh \
-			   -R ${ARGS[R]} \
-			   -D ${ARGS[D]} \
-			   -B ${BS} \
-			   -I ${ARGS[I]} \
-			   -N ${ntask}   \
-			   -C ${ARGS[C]// /,}
-	done # ntasks
+        echo ${command// +/ }
+        ${command}
+    done # ntasks
 
-done # BS
+done | tee -a ${logfile}
+echo "" >> ${logfile}

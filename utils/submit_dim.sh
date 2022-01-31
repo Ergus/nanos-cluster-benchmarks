@@ -57,17 +57,23 @@ printargs "# "
 
 # Print nanos6 environment variables
 env | grep NANOS6 | sed -e 's/^#*/# /'
-echo "# ======================================"
+echo ""
 
 if [ $((SLURM_JOB_NUM_NODES*BS<=DIM)) != 1 ]; then
 	echo "# Jump combination nodes: $node, dim: $rows, bs: $BS"
 	exit
 fi
 
-EXE_TOTAL=$(ls @TEST@_* | wc -l)
+EXES=${ARGS[REST]}
+EXES_TOTAL=$(echo $EXES | wc -w)
 
-for EXE in @TEST@_*; do
-	echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXE_TOTAL}"
+for EXE in ${EXES}; do
+	if ![[ -x $EXE ]]; then
+		echo "# WARN: Input: ${EXE} is not an executable file"
+		continue
+	fi
+
+	echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXES_TOTAL}"
 	for NCORES in $CORES; do
 		for DISABLE_REMOTE in false true; do  # namespace enable/disable
 
@@ -89,7 +95,6 @@ for EXE in @TEST@_*; do
 				echo "# Elapsed: $((end-start)) accumulated $((end-init))"
 				echo "# --------------------------------------"
 			done
-			echo ""
 		done
 	done
 done
