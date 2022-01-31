@@ -1,10 +1,5 @@
 #!/bin/bash
 
-#SBATCH --workdir=.
-
-#SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=48
-
 #SBATCH --signal=B:SIGUSR1@120
 
 function got_signal() {

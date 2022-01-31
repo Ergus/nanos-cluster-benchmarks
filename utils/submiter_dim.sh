@@ -72,6 +72,9 @@ for BS in ${ARGS[B]}; do
                         --job-name="${jobname}/${ntask}" \
                         --output="${ARGS[o]}/%x_%j.out" \
                         --error="${ARGS[o]}/%x_%j.err" \
+                        --tasks-per-node=1 \
+                        --cpus-per-task=48 \
+                        --workdir=. \
                         ./submit_matvec_dim.sh \
                         -R ${ARGS[R]} \
                         -D ${ARGS[D]} \
