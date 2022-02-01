@@ -46,11 +46,20 @@ if [ -z "${ARGS[REST]}" ]; then
     exit 1
 fi
 
-# Check all the files are executable
 for EXE in ${ARGS[REST]}; do
+    # Check all the files are executable
     if [ ! -x $EXE ]; then
         echo "Error: '$EXE' is not an executable file" >&2
         exit 2
+    fi
+
+    # check all inputs has common prefix.
+    PREFIX=${EXE%%_*}
+    if [ -z ${TEST} ]; then
+        TEST=${PREFIX}
+    elif [ ${TEST} != ${PREFIX} ]; then
+        echo "Error: No common prefix (${TEST} != ${PREFIX})" >&2
+        exit 3
     fi
 done
 
@@ -58,7 +67,7 @@ echo "# List ntasks: [ ${ARGS[N]} ]"
 
 for BS in ${ARGS[B]}; do
 
-    jobname="@TEST@_${ARGS[D]}_${BS}_${ARGS[I]}"
+    jobname="${TEST}_${ARGS[D]}_${BS}_${ARGS[I]}"
 
     OUTDIR="${ARGS[o]}/${jobname}"
     mkdir -p ${OUTDIR}
@@ -75,7 +84,7 @@ for BS in ${ARGS[B]}; do
                         --tasks-per-node=1 \
                         --cpus-per-task=48 \
                         --workdir=. \
-                        ./submit_matvec_dim.sh \
+                        ./submit_dim.sh \
                         -R ${ARGS[R]} \
                         -D ${ARGS[D]} \
                         -B ${BS} \
