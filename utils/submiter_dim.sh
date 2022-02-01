@@ -36,9 +36,12 @@ parse_args "$@"
 
 mkdir -p "${ARGS[o]}"
 logfile="${ARGS[o]}/submit.log"
-echo "# Submit time: $(date)" | tee -a ${logfile}
 
-printargs "# " | tee -a ${logfile}
+# Redirect all the outputs to the logfile
+exec &> >(tee -a ${ARGS[o]}/submit.log)
+
+echo "# Submit time: $(date)"
+printargs "# "
 
 # Check that there are executables to run
 if [ -z "${ARGS[REST]}" ]; then
@@ -47,15 +50,13 @@ if [ -z "${ARGS[REST]}" ]; then
 fi
 
 for EXE in ${ARGS[REST]}; do
-    # Check all the files are executable
-    if [ ! -x $EXE ]; then
+    if [ ! -x $EXE ]; then    # Check all the files are executable
         echo "Error: '$EXE' is not an executable file" >&2
         exit 2
     fi
 
-    # check all inputs has common prefix.
     PREFIX=${EXE%%_*}
-    if [ -z ${TEST} ]; then
+    if [ -z ${TEST} ]; then   # check all inputs have a common prefix.
         TEST=${PREFIX}
     elif [ ${TEST} != ${PREFIX} ]; then
         echo "Error: No common prefix (${TEST} != ${PREFIX})" >&2
@@ -63,8 +64,7 @@ for EXE in ${ARGS[REST]}; do
     fi
 done
 
-echo "# List ntasks: [ ${ARGS[N]} ]"
-
+# If we are here then we can start the submission.
 for BS in ${ARGS[B]}; do
 
     jobname="${TEST}_${ARGS[D]}_${BS}_${ARGS[I]}"
@@ -98,5 +98,5 @@ for BS in ${ARGS[B]}; do
         ${command}
     done # ntasks
 
-done | tee -a ${logfile}
-echo "" >> ${logfile}
+done
+echo ""
