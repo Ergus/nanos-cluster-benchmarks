@@ -60,16 +60,16 @@ if [ $((SLURM_JOB_NUM_NODES*BS<=DIM)) != 1 ]; then
 fi
 
 EXES=${ARGS[REST]}
-EXES_TOTAL=$(echo $EXES | wc -w)
+EXES_COUNT=$(echo $EXES | wc -w)
 
 for EXE in ${EXES}; do
 	# Check that EXE exists and is an executable
-	if ![[ -x $EXE ]]; then
+	if [[ ! -x $EXE ]]; then
 		echo "# WARN: Input: ${EXE} is not an executable file"
 		continue
 	fi
 
-	echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXES_TOTAL}"
+	echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXES_COUNT}"
 	for NCORES in $CORES; do
 		for DISABLE_REMOTE in false true; do  # namespace enable/disable
 

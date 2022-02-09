@@ -27,7 +27,6 @@ add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
 add_argument -a N -l nodes -h "Number of nodes" -t list -d 1,2,4,8,16,32
 add_argument -a C -l cores -h "Number of cores per node" -t list -d 12,24,48
 
-
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t list
 add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
@@ -73,12 +72,12 @@ for BS in ${ARGS[B]}; do
     mkdir -p ${OUTDIR}
     echo "# Output directory: ${OUTDIR}"
 
-    for ntask in ${ARGS[N]}; do
+    for ntasks in ${ARGS[N]}; do
 
-        command="sbatch --ntasks=${ntask} \
+        command="sbatch --ntasks=${ntasks} \
                         --time=${ARGS[w]} \
                         --qos=${ARGS[q]} \
-                        --job-name="${jobname}/${ntask}" \
+                        --job-name="${jobname}/${ntasks}" \
                         --output="${ARGS[o]}/%x_%j.out" \
                         --error="${ARGS[o]}/%x_%j.err" \
                         --tasks-per-node=1 \
@@ -89,7 +88,7 @@ for BS in ${ARGS[B]}; do
                         -D ${ARGS[D]} \
                         -B ${BS} \
                         -I ${ARGS[I]} \
-                        -N ${ntask}   \
+                        -N ${ntasks}   \
                         -C ${ARGS[C]// /,} \
                         ${ARGS[REST]} "
 
@@ -97,6 +96,5 @@ for BS in ${ARGS[B]}; do
         echo ${command// +/ }
         ${command}
     done # ntasks
-
-done
+done # BS
 echo ""
