@@ -109,6 +109,73 @@ extern "C" {
 	            double *alpha, double *a, int *lda,
 	            double *beta, double *c, int *ldc);
 
+// Instrument blas events
+#if __WITH_EXTRAE // #####################
+#include <extrae.h>
+
+#define BLAS_EVENT 9910003
+#define PRVANIM_EVENT 9200042
+
+#define BLAS_EVENT_VALUES						\
+	EVENT(BLAS_NONE)							\
+	EVENT(BLAS_POTRF)							\
+	EVENT(BLAS_TRSM)							\
+	EVENT(BLAS_GEMM)							\
+	EVENT(BLAS_GEMV)							\
+	EVENT(BLAS_SYRK)
+
+	enum blas_values_t {
+		#define EVENT(evt) evt,
+		BLAS_EVENT_VALUES
+		#undef EVENT
+		BLAS_NEVENTS
+	};
+
+	void register_blas_events()
+	{
+		inst_type_t event = BLAS_EVENT;
+
+		unsigned nvalues = BLAS_NEVENTS;
+
+		static extrae_value_t blas_values[BLAS_NEVENTS] = {
+			#define EVENT(evt) (inst_value_t) evt,
+			BLAS_EVENT_VALUES
+			#undef EVENT
+		};
+
+		static char *blas_names[BLAS_NEVENTS] = {
+			#define EVENT(evt) #evt,
+			BLAS_EVENT_VALUES
+			#undef EVENT
+		};
+
+		inst_define_event_type(&event, "blas_event", &nvalues, blas_values, blas_names);
+	}
+
+	void inst_blas_kernel(bool emmit, int kernel, int k, int y, int x)
+	{
+		inst_event(BLAS_EVENT, kernel);
+
+		#ifdef __WITH_PRVANIM
+		if (!emmit) {
+			return;
+		}
+		nanos6_instrument_event(PRVANIM_EVENT, kernel);
+		nanos6_instrument_event(PRVANIM_EVENT, k + 1000000);
+		nanos6_instrument_event(PRVANIM_EVENT, y + 2000000);
+		nanos6_instrument_event(PRVANIM_EVENT, x + 3000000);
+		#endif // __WITH_PRVANIM
+	}
+
+#else // __WITH_EXTRAE // #####################
+
+#define BLAS_EVENT 0
+#define register_blas_events()
+#define inst_blas_kernel(emmit, kernel, k, y, x)
+
+#endif // __WITH_EXTRAE // #####################
+
+
 
 #ifdef __cplusplus
 }
