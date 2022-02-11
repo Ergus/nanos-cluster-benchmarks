@@ -39,7 +39,7 @@ foreach (FETCHID 0;1)
 
   add_executable(${EXECUTABLE} jacobi_task_ompss2.c)
   target_compile_definitions(${EXECUTABLE} PUBLIC FETCHTASK=${FETCHID})
-  target_link_libraries(${EXECUTABLE} argparser base)
+  target_link_libraries(${EXECUTABLE} base)
 
   add_test(NAME Test_${EXECUTABLE}
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)

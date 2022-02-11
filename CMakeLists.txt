@@ -80,8 +80,22 @@ find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 find_package(INTEL REQUIRED)
 
+# BLAS
+set(BLA_VENDOR Intel10_64lp_seq)
+find_package(BLAS REQUIRED)
+
+find_path(
+  MKL_INCLUDE_DIR mkl.h
+  HINTS ENV MKLROOT
+  PATH_SUFFIXES include)
+
+include_directories(${MKL_INCLUDE_DIR})
+add_link_options(${BLAS_LINKER_FLAGS})
+link_libraries(${BLAS_LIBRARIES})
+
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)
+link_libraries(argparser)
 
 include_directories(utils)
 enable_testing()

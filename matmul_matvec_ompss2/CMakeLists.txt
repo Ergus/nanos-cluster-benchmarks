@@ -90,7 +90,6 @@ foreach (NODEID 0;1)
 	PUBLIC WITHNODE=${NODEID}
 	PUBLIC ISMATVEC=${ISMATVEC}
 	PUBLIC FETCHTASK=${FETCHID})
-      target_link_libraries(${executable} argparser)
 
       create_test_pair(${executable})
     endforeach ()
