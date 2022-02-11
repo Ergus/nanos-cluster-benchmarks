@@ -72,19 +72,6 @@ void register_blas_events()
 	};
 
 	inst_define_event_type(&event, "blas_event", &nvalues, blas_values, blas_names);
-
-/* #ifdef __WITH_PRVANIM */
-/* 	nvalues = 0; */
-
-/* 	event = PRVANIM_EVENT; */
-/* 	inst_define_event_type(&event, "prvanim kernel", &nvalues, NULL, NULL); */
-/* 	event = PRVANIM_K; */
-/* 	inst_define_event_type(&event, "prvanim k", &nvalues, NULL, NULL); */
-/* 	event = PRVANIM_Y; */
-/* 	inst_define_event_type(&event, "prvanim y", &nvalues, NULL, NULL); */
-/* 	event = PRVANIM_X; */
-/* 	inst_define_event_type(&event, "prvanim x", &nvalues, NULL, NULL); */
-/* #endif // __WITH_PRVANIM */
 }
 
 void inst_blas_kernel(bool emmit, int kernel, int k, int y, int x)
