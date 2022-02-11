@@ -29,8 +29,6 @@ extern "C" {
 #include <errno.h>
 #include <assert.h>
 
-#include <mkl.h>
-
 #include "benchmarks_ompss.h"
 
 #if __WITH_EXTRAE
@@ -96,18 +94,6 @@ void inst_blas_kernel(bool emmit, int kernel, int k, int y, int x)
 #define inst_blas_kernel(emmit, kernel, k, y, x)
 
 #endif // __WITH_EXTRAE
-
-void dgemm_(const char *transa, const char *transb, int *l, int *n, int *m,
-            double *alpha, const void *a, int *lda, void *b, int *ldb,
-            double *beta, void *c, int *ldc);
-
-void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
-            double *alpha, double *a, int *lda, double *b, int *ldb);
-
-void dsyrk_(char *uplo, char *trans, int *n, int *k,
-            double *alpha, double *a, int *lda,
-            double *beta, double *c, int *ldc);
-
 
 //! This is to initialize blocks[i][j]
 static inline void fill_block(const size_t ts, double block[ts][ts],

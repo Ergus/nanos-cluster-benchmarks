@@ -90,6 +90,26 @@ extern "C" {
 	}
 
 
+	// Declare some blas routines.
+	#include <mkl.h>
+
+	void dgemv_ (const char *trans, const int *m, const int *n,
+	             const double *alpha, const double *A, const int *lda,
+	             const double *x, const int *incx,
+	             const double *beta, double *y, const int *incy);
+
+	void dgemm_(const char *transa, const char *transb, int *l, int *n, int *m,
+	            double *alpha, const void *a, int *lda, void *b, int *ldb,
+	            double *beta, void *c, int *ldc);
+
+	void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
+	            double *alpha, double *a, int *lda, double *b, int *ldb);
+
+	void dsyrk_(char *uplo, char *trans, int *n, int *k,
+	            double *alpha, double *a, int *lda,
+	            double *beta, double *c, int *ldc);
+
+
 #ifdef __cplusplus
 }
 #endif
