@@ -173,11 +173,7 @@ void jacobi_taskfor_ompss2(const double *A, const double *B,
 				node(nanos6_cluster_no_offload)							\
 				label("jacobi_taskfor")
 			for (size_t j = i; j < i + rowsPerNode; ++j) {
-				inst_event(9910002, dim);
-
-				jacobi_base(&A[j * dim], B[j], xin, &xout[j], dim);
-
-				inst_event(9910002, 0);
+				jacobi(&A[j * dim], &B[j], xin, &xout[j], 1, dim);
 			}
 		}
 	}

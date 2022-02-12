@@ -94,6 +94,7 @@ extern "C" {
 	#include <mkl.h>
 	#include <limits.h>
 
+	void dcopy_(const int *n, const double *dx, const int *incx, double *dy, const int *incy);
 
 	void dgemv_ (const char *trans, const int *m, const int *n,
 	             const double *alpha, const double *A, const int *lda,
@@ -124,6 +125,7 @@ extern "C" {
 	EVENT(BLAS_TRSM)							\
 	EVENT(BLAS_GEMM)							\
 	EVENT(BLAS_GEMV)							\
+	EVENT(BLAS_COPY)							\
 	EVENT(BLAS_SYRK)
 
 	enum blas_values_t {
