@@ -79,6 +79,7 @@ link_libraries(MPI::MPI_C)
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 find_package(INTEL REQUIRED)
+add_compile_options(--Wn,-diag-disable=858)
 
 # BLAS
 set(BLA_VENDOR Intel10_64lp_seq)

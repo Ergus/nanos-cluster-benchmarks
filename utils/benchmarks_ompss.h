@@ -82,9 +82,11 @@ extern "C" {
 	             const double *x, const int *incx,
 	             const double *beta, double *y, const int *incy);
 
-	void dgemm_(const char *transa, const char *transb, int *l, int *n, int *m,
-	            double *alpha, const void *a, int *lda, void *b, int *ldb,
-	            double *beta, void *c, int *ldc);
+	void dgemm_(const char *transa, const char *transb,
+	            const int *l, const int *n, const int *m,
+	            const double *alpha, const void *a, const int *lda, 
+	            const void *b, const int *ldb,
+	            const double *beta, void *c, const int *ldc);
 
 	void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
 	            double *alpha, double *a, int *lda, double *b, int *ldb);
