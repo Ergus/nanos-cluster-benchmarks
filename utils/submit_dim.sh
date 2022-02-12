@@ -15,7 +15,7 @@ source @PROJECT_BINARY_DIR@/argparse.sh
 # Arguments to use in this script
 add_argument -a R -l repeats -h "Repetitions per program" -t int
 add_argument -a N -l ntasks -h "number of tasks" -t int
-add_argument -a C -l cores -h "Number of cores per node" -t list
+add_argument -a C -l cores -h "Number of cores per task" -t int
 
 # Arguments for the executable
 add_argument -a D -l dim -h "Matrix dimension" -t int
@@ -32,7 +32,7 @@ BS=${ARGS[B]}
 REPEATS=${ARGS[R]}
 ITS=${ARGS[I]}
 
-NTASTS=${ARGS[N]}
+NTASKS=${ARGS[N]}
 CORES=${ARGS[C]}
 
 # special nanos variables needed to set.
@@ -41,7 +41,7 @@ export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
 echo "# Nodes: ${SLURM_JOB_NUM_NODES} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
-echo "# Ntasks: ${NTASTS} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE}"
+echo "# Ntasks: ${NTASKS} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE}"
 echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
 echo "# QOS: ${SLURM_JOB_QOS}"
 echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
@@ -70,27 +70,25 @@ for EXE in ${EXES}; do
 	fi
 
 	echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXES_COUNT}"
-	for NCORES in $CORES; do
-		for DISABLE_REMOTE in false true; do  # namespace enable/disable
+	for DISABLE_REMOTE in false true; do  # namespace enable/disable
 
-			# Run only once for mpi benchmarks
-			[ $DISABLE_REMOTE == true ] && [ ${EXE##*_} == 'mpi' ] && continue
+		# Run only once for mpi benchmarks
+		[ $DISABLE_REMOTE == true ] && [ ${EXE##*_} == 'mpi' ] && continue
 
-			export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=${DISABLE_REMOTE}"
+		export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=${DISABLE_REMOTE}"
 
-			COMMAND="srun --ntasks=${NTASTS} taskset -c 0-$((NCORES - 1)) ./${EXE} $DIM $BS $ITS"
+		COMMAND="srun --cpu-bind=cores --ntasks=${NTASKS} --cpus-per-task=${CORES} ./${EXE} $DIM $BS $ITS"
 
-			echo -e "# Starting command: ${COMMAND}"
-			echo "# ======================================"
-			for it in $(seq ${REPEATS}); do
-				echo "# Starting it: ${it} $(date)"
-				start=${SECONDS}
-				${COMMAND}
-				end=${SECONDS}
-				echo "# Ending: $(date)"
-				echo "# Elapsed: $((end-start)) accumulated $((end-init))"
-				echo "# --------------------------------------"
-			done
+		echo -e "# Starting command: ${COMMAND}"
+		echo "# ======================================"
+		for it in $(seq ${REPEATS}); do
+			echo "# Starting it: ${it} $(date)"
+			start=${SECONDS}
+			${COMMAND}
+			end=${SECONDS}
+			echo "# Ending: $(date)"
+			echo "# Elapsed: $((end-start)) accumulated $((end-init))"
+			echo "# --------------------------------------"
 		done
 	done
 done

@@ -24,8 +24,9 @@ add_argument -a o -l output -h "Output directory" -t string -d "results"
 
 # Arguments to bypass
 add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
-add_argument -a N -l nodes -h "Number of nodes" -t list -d 1,2,4,8,16,32
+add_argument -a N -l ntasks -h "Number of tasks" -t list -d 1,2,4,8,16,32
 add_argument -a C -l cores -h "Number of cores per node" -t list -d 12,24,48
+add_argument -a F -l fitnodes -h "Fit processes in nodes" -t bool
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t list
@@ -40,6 +41,7 @@ logfile="${ARGS[o]}/submit.log"
 exec &> >(tee -a ${ARGS[o]}/submit.log)
 
 echo "# Submit time: $(date)"
+echo "# Args: $*"
 printargs "# "
 
 # Check that there are executables to run
@@ -64,37 +66,42 @@ for EXE in ${ARGS[REST]}; do
 done
 
 # If we are here then we can start the submission.
-for BS in ${ARGS[B]}; do
+for CORES in ${ARGS[C]}; do
+    for BS in ${ARGS[B]}; do
 
-    jobname="${TEST}_${ARGS[D]}_${BS}_${ARGS[I]}"
+        JOBPREFIX="${TEST}_${ARGS[D]}_${BS}_${ARGS[I]}_${CORES}"
 
-    OUTDIR="${ARGS[o]}/${jobname}"
-    mkdir -p ${OUTDIR}
-    echo "# Output directory: ${OUTDIR}"
+        OUTDIR="${ARGS[o]}/${JOBPREFIX}"
+        mkdir -p ${OUTDIR}
+        echo "# Output directory: ${OUTDIR}"
 
-    for ntasks in ${ARGS[N]}; do
+        for NTASKS in ${ARGS[N]}; do
+            if [ ${ARGS[F]} == true ]; then # One process per node
+                nodes=$(( (NTASKS * CORES + 48 - 1) / 48 ))
+            else
+                nodes=${NTASKS}
+            fi
+            command="sbatch --nodes=${nodes} \
+                            --exclusive \
+                            --time=${ARGS[w]} \
+                            --qos=${ARGS[q]} \
+                            --job-name="${JOBPREFIX}/${NTASKS}" \
+                            --output="${ARGS[o]}/%x_%j.out" \
+                            --error="${ARGS[o]}/%x_%j.err" \
+                            --workdir=. \
+                            ./submit_dim.sh \
+                            -R ${ARGS[R]} \
+                            -D ${ARGS[D]} \
+                            -B ${BS} \
+                            -I ${ARGS[I]} \
+                            -N ${NTASKS}   \
+                            -C ${CORES} \
+                            ${ARGS[REST]} "
 
-        command="sbatch --ntasks=${ntasks} \
-                        --time=${ARGS[w]} \
-                        --qos=${ARGS[q]} \
-                        --job-name="${jobname}/${ntasks}" \
-                        --output="${ARGS[o]}/%x_%j.out" \
-                        --error="${ARGS[o]}/%x_%j.err" \
-                        --tasks-per-node=1 \
-                        --cpus-per-task=48 \
-                        --workdir=. \
-                        ./submit_dim.sh \
-                        -R ${ARGS[R]} \
-                        -D ${ARGS[D]} \
-                        -B ${BS} \
-                        -I ${ARGS[I]} \
-                        -N ${ntasks}   \
-                        -C ${ARGS[C]// /,} \
-                        ${ARGS[REST]} "
-
-        # Print and execute command
-        echo ${command// +/ }
-        ${command}
-    done # ntasks
-done # BS
+            # Print and execute command
+            echo ${command// +/ }
+            ${command}
+        done # NTASKS
+    done # BS
+done # CORES
 echo ""
