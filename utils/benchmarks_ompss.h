@@ -40,25 +40,6 @@ extern "C" {
 #include "cmacros/macros.h"
 #include "ArgParserC/argparser.h"
 
-// Define extrae if macro is set.
-#if __WITH_EXTRAE
-#include "extrae_user_events.h"
-	typedef extrae_type_t inst_type_t;
-	typedef extrae_value_t inst_value_t;
-
-#define inst_define_event_type(type,name,nvalues,values,descriptions)	\
-	Extrae_define_event_type(type,name,nvalues,values,descriptions)
-#define inst_event(evt, val)					\
-	Extrae_event(evt, val)
-#else // __WITH_EXTRAE
-	typedef size_t inst_type_t;
-	typedef size_t inst_value_t;
-
-#define inst_define_event_type(type,name,nvalues,values,descriptions)
-#define inst_event(evt, val)
-#endif // __WITH_EXTRAE
-
-
 	void __print_task(const double * const mat,
 	                  const size_t rows, const size_t cols,
 	                  const char prefix[64], const char name[64]
@@ -112,9 +93,19 @@ extern "C" {
 	            double *alpha, double *a, int *lda,
 	            double *beta, double *c, int *ldc);
 
-// Instrument blas events
+
 #if __WITH_EXTRAE // #####################
+
 #include <extrae.h>
+#include "extrae_user_events.h"
+
+	typedef extrae_type_t inst_type_t;
+	typedef extrae_value_t inst_value_t;
+
+#define inst_define_event_type(type,name,nvalues,values,descriptions)	\
+	Extrae_define_event_type(type,name,nvalues,values,descriptions)
+#define inst_event(evt, val)					\
+	Extrae_event(evt, val)
 
 #define BLAS_EVENT 9910003
 #define PRVANIM_EVENT 9200042
@@ -173,13 +164,17 @@ extern "C" {
 
 #else // __WITH_EXTRAE // #####################
 
+	typedef size_t inst_type_t;
+	typedef size_t inst_value_t;
+
+#define inst_define_event_type(type,name,nvalues,values,descriptions)
+#define inst_event(evt, val)
+
 #define BLAS_EVENT 0
 #define register_blas_events()
 #define inst_blas_kernel(emmit, kernel, k, y, x)
 
 #endif // __WITH_EXTRAE // #####################
-
-
 
 #ifdef __cplusplus
 }
