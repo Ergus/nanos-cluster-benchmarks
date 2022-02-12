@@ -26,6 +26,6 @@ void jacobi_base(
 	xouti[0] = Bi;
 
 	for (size_t j = 0; j < dim; ++j) {
-		xouti[0] += A[j] * xin[j];
+		xouti[0] += (A[j] * xin[j]);
 	}
 }
