@@ -92,6 +92,8 @@ extern "C" {
 
 	// Declare some blas routines.
 	#include <mkl.h>
+	#include <limits.h>
+
 
 	void dgemv_ (const char *trans, const int *m, const int *n,
 	             const double *alpha, const double *A, const int *lda,

@@ -26,17 +26,28 @@
 void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
-	inst_event(9910002, dim);
+	inst_blas_kernel(false, BLAS_DGEMV, 0, 0, 0);
 
-	for (size_t i = 0; i < ts; ++i) {
-		C[i] = 0.0;
+	myassert(dim < (size_t) INT_MAX);
 
-		for (size_t j = 0; j < dim; ++j) {
-			C[i] += A[i * dim + j] * B[j];
-		}
-	}
+	const char TR = 'T';
+	const int M = (int) dim;
+	const int N = (int) ts;
+	const double alpha = 1.0;
+	const double beta = 0.0;
+	const int incx = 1;
 
-	inst_event(9910002, 0);
+	dgemv_(&TR, &M, &N, &alpha, A, &M, B, &incx, &beta, C, &incx);
+
+	// for (size_t i = 0; i < ts; ++i) {
+	// 	C[i] = 0.0;
+
+	// 	for (size_t j = 0; j < dim; ++j) {
+	// 		C[i] += A[i * dim + j] * B[j];
+	// 	}
+	// }
+
+	inst_blas_kernel(false, BLAS_NONE, 0, 0, 0);
 }
 #else
 void matmul_base(const double *A, const double *B, double * const C,
