@@ -45,9 +45,9 @@ extern "C" {
 		const int inc = 1;
 
 		inst_blas_kernel(false, BLAS_COPY, 0, 0, 0);
-		dcopy_(&N, B, &inc, xout, &inc)
+		dcopy_(&N, B, &inc, xout, &inc);
 
-		inst_blas_kernel(false, BLAS_DGEMV, 0, 0, 0);
+		inst_blas_kernel(false, BLAS_GEMV, 0, 0, 0);
 		dgemv_(&TR, &M, &N, &alpha, A, &M, xin, &inc, &beta, xout, &inc);
 
 		// for (size_t i = 0; i < ts; ++i) {

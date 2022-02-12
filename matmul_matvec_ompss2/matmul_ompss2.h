@@ -24,6 +24,73 @@ extern "C" {
 
 #include "benchmarks_ompss.h"
 
+#if ISMATVEC
+	void matmul_base(const double *A, const double *B, double * const C,
+	                 size_t ts, size_t dim, size_t colsBC
+	) {
+		inst_blas_kernel(false, BLAS_GEMV, 0, 0, 0);
+
+		myassert(dim < (size_t) INT_MAX);
+
+		const char TR = 'T';
+		const int M = (int) dim;
+		const int N = (int) ts;
+		const double alpha = 1.0;
+		const double beta = 0.0;
+		const int incx = 1;
+
+		dgemv_(&TR, &M, &N, &alpha, A, &M, B, &incx, &beta, C, &incx);
+
+		// for (size_t i = 0; i < ts; ++i) {
+		// 	C[i] = 0.0;
+
+		// 	for (size_t j = 0; j < dim; ++j) {
+		// 		C[i] += A[i * dim + j] * B[j];
+		// 	}
+		// }
+
+		inst_blas_kernel(false, BLAS_NONE, 0, 0, 0);
+	}
+#else
+	void matmul_base(const double *A, const double *B, double * const C,
+	                 size_t ts, size_t dim, size_t colsBC
+	) {
+		inst_blas_kernel(false, BLAS_GEMM, 0, 0, 0);
+
+		const char TA = 'N';
+		const char TB = 'N';
+		const int M = (int) dim;
+		const int N = (int) ts;
+		const int K = (int) colsBC;
+		const double ALPHA = 1.0;
+		const int LDA = M;
+		const int LDB = K;
+		const double BETA = 0.0;
+		const int LDC = M;
+
+		dgemm_(&TA, &TB, &M, &N, &K, &ALPHA,
+		       B, &LDB,
+		       A, &LDA, &BETA,
+		       C, &LDC);
+
+		// for (size_t i = 0; i < ts; ++i) {
+		// 	for (size_t k = 0; k < colsBC; ++k)
+		// 		C[i * colsBC + k] = 0.0;
+
+		// 	for (size_t j = 0; j < dim; ++j) {
+		// 		const double temp = A[i * dim + j];
+
+		// 		for (size_t k = 0; k < colsBC; ++k) {
+		// 			C[i * colsBC + k] += (temp * B[j * colsBC + k]);
+		// 		}
+		// 	}
+		// }
+
+		inst_blas_kernel(false, BLAS_NONE, 0, 0, 0);
+	}
+#endif
+
+
 	void free_matrix(double *mat, size_t size)
 	{
 		nanos6_dfree(mat, size * sizeof(double));
