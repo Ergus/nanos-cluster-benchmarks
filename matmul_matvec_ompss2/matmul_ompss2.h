@@ -28,6 +28,19 @@ extern "C" {
 	void matmul_base(const double *A, const double *B, double * const C,
 	                 size_t ts, size_t dim, size_t colsBC
 	) {
+		#if BLAS == 0
+		inst_event(USER_EVENT, USER_MATVEC);
+		for (size_t i = 0; i < ts; ++i) {
+			C[i] = 0.0;
+
+			for (size_t j = 0; j < dim; ++j) {
+				C[i] += A[i * dim + j] * B[j];
+			}
+		}
+		inst_event(USER_EVENT, USER_NONE);
+
+		#elif BLAS == 1
+
 		inst_blas_kernel(false, BLAS_GEMV, 0, 0, 0);
 
 		myassert(dim < (size_t) INT_MAX);
@@ -40,21 +53,33 @@ extern "C" {
 		const int incx = 1;
 
 		dgemv_(&TR, &M, &N, &alpha, A, &M, B, &incx, &beta, C, &incx);
-
-		// for (size_t i = 0; i < ts; ++i) {
-		// 	C[i] = 0.0;
-
-		// 	for (size_t j = 0; j < dim; ++j) {
-		// 		C[i] += A[i * dim + j] * B[j];
-		// 	}
-		// }
-
 		inst_blas_kernel(false, BLAS_NONE, 0, 0, 0);
+		#else // BLAS
+		#error No valid BLAS value
+		#endif // BLAS
 	}
 #else
 	void matmul_base(const double *A, const double *B, double * const C,
 	                 size_t ts, size_t dim, size_t colsBC
 	) {
+		#if BLAS == 0
+		inst_event(USER_EVENT, USER_MATMUL);
+		for (size_t i = 0; i < ts; ++i) {
+			for (size_t k = 0; k < colsBC; ++k)
+				C[i * colsBC + k] = 0.0;
+
+			for (size_t j = 0; j < dim; ++j) {
+				const double temp = A[i * dim + j];
+
+				for (size_t k = 0; k < colsBC; ++k) {
+					C[i * colsBC + k] += (temp * B[j * colsBC + k]);
+				}
+			}
+		}
+		inst_event(USER_EVENT, USER_NONE);
+
+		#elif BLAS == 1
+
 		inst_blas_kernel(false, BLAS_GEMM, 0, 0, 0);
 
 		const char TA = 'N';
@@ -73,20 +98,11 @@ extern "C" {
 		       A, &LDA, &BETA,
 		       C, &LDC);
 
-		// for (size_t i = 0; i < ts; ++i) {
-		// 	for (size_t k = 0; k < colsBC; ++k)
-		// 		C[i * colsBC + k] = 0.0;
-
-		// 	for (size_t j = 0; j < dim; ++j) {
-		// 		const double temp = A[i * dim + j];
-
-		// 		for (size_t k = 0; k < colsBC; ++k) {
-		// 			C[i * colsBC + k] += (temp * B[j * colsBC + k]);
-		// 		}
-		// 	}
-		// }
-
 		inst_blas_kernel(false, BLAS_NONE, 0, 0, 0);
+
+		#else // BLAS
+		#error No valid BLAS value
+		#endif // BLAS
 	}
 #endif
 

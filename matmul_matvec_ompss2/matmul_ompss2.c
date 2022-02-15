@@ -193,6 +193,8 @@ int main(int argc, char* argv[])
 	const size_t ITS = create_optional_cl_size_t ("Iterations", 1);
 	const int PRINT = create_optional_cl_int ("Print", 0);
 
+	inst_register_events();  // Register the events in the instrumentation
+
 	printf("# Initializing data\n");
 	timer ttimer = create_timer("Total_time");
 

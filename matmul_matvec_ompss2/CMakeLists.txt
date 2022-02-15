@@ -59,39 +59,46 @@ foreach (NODEID 0;1)
   foreach (ISMATVEC 0;1)
     list(GET TESTLIST ${ISMATVEC} TEST)
 
-    # Strong
-    SET(TASKTYPELIST strong_flat_task strong_nested_task weak_taskfor)
-    foreach (TASKTYPEID 0;1;2)
-      list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPESUFIX)
+    set(BLASLIST noblas blas)
+    foreach(BLAS 0 1)
+      list(GET BLASLIST ${BLAS} BLASSUFIX)
 
-      # Executable
-      set(executable "${TEST}_${TASKTYPESUFIX}_${NODESUFIX}_ompss2")
-      message("- Add benchmark: ${executable}")
-      add_executable(${executable} matmul_ompss2.c)
-      target_compile_definitions(${executable}
-	PUBLIC WITHNODE=${NODEID}
-	PUBLIC TASKTYPE=${TASKTYPEID}
-	PUBLIC ISMATVEC=${ISMATVEC})
-      target_link_libraries(${executable} argparser)
+      # Strong
+      SET(TASKTYPELIST strong_flat_task strong_nested_task weak_taskfor)
+      foreach (TASKTYPEID 0;1;2)
+	list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPESUFIX)
 
-      create_test_pair(${executable})
-    endforeach ()
+	# Executable
+	set(executable "${TEST}_${TASKTYPESUFIX}_${NODESUFIX}_${BLASSUFIX}_ompss2")
+	message("- Add benchmark: ${executable}")
+	add_executable(${executable} matmul_ompss2.c)
+	target_compile_definitions(${executable}
+	  PUBLIC WITHNODE=${NODEID}
+	  PUBLIC TASKTYPE=${TASKTYPEID}
+	  PUBLIC ISMATVEC=${ISMATVEC}
+	  PUBLIC BLAS=${BLAS})
+	target_link_libraries(${executable} argparser)
 
-    # weak tests.
-    SET(FETCHLIST weak_nofetch_task weak_fetchall_task) # fetch
-    foreach (FETCHID 0;1)
-      list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
+	create_test_pair(${executable})
+      endforeach ()
 
-      set(executable "${TEST}_${FETCHSUFIX}_${NODESUFIX}_ompss2")
-      message("- Add benchmark: ${executable}")
-      add_executable(${executable} matmul_ompss2.c)
-      target_compile_definitions(${executable}
-	PUBLIC TASKTYPE=3
-	PUBLIC WITHNODE=${NODEID}
-	PUBLIC ISMATVEC=${ISMATVEC}
-	PUBLIC FETCHTASK=${FETCHID})
+      # weak tests.
+      SET(FETCHLIST weak_nofetch_task weak_fetchall_task) # fetch
+      foreach (FETCHID 0;1)
+	list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
 
-      create_test_pair(${executable})
+	set(executable "${TEST}_${FETCHSUFIX}_${NODESUFIX}_${BLASSUFIX}_ompss2")
+	message("- Add benchmark: ${executable}")
+	add_executable(${executable} matmul_ompss2.c)
+	target_compile_definitions(${executable}
+	  PUBLIC TASKTYPE=3
+	  PUBLIC WITHNODE=${NODEID}
+	  PUBLIC ISMATVEC=${ISMATVEC}
+	  PUBLIC FETCHTASK=${FETCHID} 
+	  PUBLIC BLAS=${BLAS})
+
+	create_test_pair(${executable})
+      endforeach ()
     endforeach ()
   endforeach ()
 endforeach ()
