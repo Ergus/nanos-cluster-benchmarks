@@ -88,7 +88,7 @@ extern "C" {
 #define dbprintf_if(...)
 #endif
 
-	FILE *get_file(const char prefix[64], const char name[64],
+	inline FILE *get_file(const char prefix[64], const char name[64],
 	               const char *restrict mode)
 	{
 		FILE *fp = stdout;
@@ -101,8 +101,8 @@ extern "C" {
 		return fp;
 	}
 
-	void print_matrix_header(FILE *fp, const char name[64],
-	                         const size_t rows, const size_t cols
+	inline void print_matrix_header(FILE *fp, const char name[64],
+	                                const size_t rows, const size_t cols
 	) {
 		fprintf(fp, "# name: %s\n", name);
 		fprintf(fp, "# type: matrix\n");
@@ -110,8 +110,8 @@ extern "C" {
 		fprintf(fp, "# columns: %lu\n", cols);
 	}
 
-	void print_matrix_data(FILE *fp, const double * const mat,
-	                       const size_t rows, const size_t cols
+	inline void print_matrix_data(FILE *fp, const double * const mat,
+	                              const size_t rows, const size_t cols
 	) {
 		for (size_t i = 0; i < rows; ++i) {
 			for(size_t j = 0; j < cols; ++j) {
