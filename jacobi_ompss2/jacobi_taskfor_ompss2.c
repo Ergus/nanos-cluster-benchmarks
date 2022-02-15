@@ -190,6 +190,8 @@ int main(int argc, char* argv[])
 	const int PRINT = create_optional_cl_int ("Print", 0);
 	myassert(ITS > 0);
 
+	inst_register_events();  // Register the events in the instrumentation
+
 	printf("# Initializing data\n");
 	timer ttimer = create_timer("Total_time");
 
