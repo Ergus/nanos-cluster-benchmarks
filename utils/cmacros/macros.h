@@ -88,36 +88,54 @@ extern "C" {
 #define dbprintf_if(...)
 #endif
 
-
-	static inline void __print(const double * const mat,
-	                           const size_t rows, const size_t cols,
-	                           const char prefix[64], const char name[64])
+	inline FILE *get_file(const char prefix[64], const char name[64],
+	               const char *restrict mode)
 	{
 		FILE *fp = stdout;
 		if (prefix != NULL) {
 			char filename[256];
 			sprintf(filename,"%s_%s.mat", prefix, name);
-			fp = fopen(filename, "w+");
+			fp = fopen(filename, mode);
 			myassert(fp);
 		}
+		return fp;
+	}
 
+	inline void print_matrix_header(FILE *fp, const char name[64],
+	                                const size_t rows, const size_t cols
+	) {
 		fprintf(fp, "# name: %s\n", name);
 		fprintf(fp, "# type: matrix\n");
 		fprintf(fp, "# rows: %lu\n", rows);
 		fprintf(fp, "# columns: %lu\n", cols);
+	}
 
+	inline void print_matrix_data(FILE *fp, const double * const mat,
+	                              const size_t rows, const size_t cols
+	) {
 		for (size_t i = 0; i < rows; ++i) {
 			for(size_t j = 0; j < cols; ++j) {
 				fprintf(fp, "%3.8lf ", mat[i * cols + j]);
 			}
 			fprintf(fp,"\n");
 		}
+
+	}
+
+	static inline void __print(const double * const mat,
+	                           const size_t rows, const size_t cols,
+	                           const char prefix[64], const char name[64]
+	) {
+		FILE *fp = get_file(prefix, name, "w+");
+		print_matrix_header(fp, name, rows, cols);
+		print_matrix_data(fp, mat, rows, cols);
+
 		if (fp != stdout) {
 			fclose(fp);
 		}
 	}
 
-#define printmatrix(mat, rows, cols, prefix) \
+#define printmatrix(mat, rows, cols, prefix)		\
 	__print(mat, rows, cols, prefix, #mat)
 
 	static inline void block_init(double * const __restrict__ array,
