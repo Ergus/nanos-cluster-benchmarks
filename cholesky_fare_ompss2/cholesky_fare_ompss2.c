@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
 	const int CHECK = create_optional_cl_int("Check", 0);
 	modcheck(ROWS, TS);
 
-	register_blas_events();  // Register the events in the instrumentation
+	inst_register_events();  // Register the events in the instrumentation
 
 	printf("# Initializing data\n");;
 
