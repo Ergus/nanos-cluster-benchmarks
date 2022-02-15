@@ -17,57 +17,41 @@
 
 set(TEST "jacobi")
 
-# CMAKE_C_FLAGS_RELEASE is a space separated string.
-# But add_custom_command needs a list. In cmake lists are strings with ;
-string(REGEX REPLACE "[ \t]+" ";" LIBBASE_FLAGS ${CMAKE_C_FLAGS_RELEASE})
-
 # libbase.a
-add_custom_command(
-  OUTPUT libbase.o
-  COMMAND ${ICC} -c ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c ${LIBBASE_FLAGS} -o libbase.o
-  MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c
-  COMMENT "Building base object")
 
-add_library(base STATIC libbase.o)
+set(BLASLIST noblas blas)
+foreach(BLAS 0 1)
+  list(GET BLASLIST ${BLAS} BLASSUFIX)
 
-SET(FETCHLIST nofetch fetchall)
-foreach (FETCHID 0;1)
-  list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
+  # Jacobi tasks (fetch and not fetch)
+  SET(FETCHLIST nofetch fetchall)
+  foreach (FETCHID 0;1)
+    list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
 
-  set(EXECUTABLE "${TEST}_task_${FETCHSUFIX}_ompss2")
+    set(EXECUTABLE "${TEST}_task_${FETCHSUFIX}_${BLASSUFIX}_ompss2")
+    message("- Add benchmark: ${EXECUTABLE}")
+
+    add_executable(${EXECUTABLE} jacobi_task_ompss2.c)
+    target_compile_definitions(${EXECUTABLE}
+      PUBLIC FETCHTASK=${FETCHID} BLAS=${BLAS})
+
+    add_test(NAME Test_${EXECUTABLE}
+      COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+    set_tests_properties(Test_${EXECUTABLE} PROPERTIES
+      ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+  endforeach ()
+
+  # jacobi taskfor
+  set(EXECUTABLE "${TEST}_taskfor_${BLASSUFIX}_ompss2")
   message("- Add benchmark: ${EXECUTABLE}")
 
-  add_executable(${EXECUTABLE} jacobi_task_ompss2.c)
-  target_compile_definitions(${EXECUTABLE} PUBLIC FETCHTASK=${FETCHID})
-  target_link_libraries(${EXECUTABLE} base)
+  add_executable(${EXECUTABLE} jacobi_taskfor_ompss2.c)
+  target_compile_definitions(${EXECUTABLE} PUBLIC BLAS=${BLAS})
 
   add_test(NAME Test_${EXECUTABLE}
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
-  set_tests_properties(Test_${EXECUTABLE} PROPERTIES
-    ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+
 endforeach ()
-
-# jacobi taskfor
-set(EXECUTABLE "${TEST}_taskfor_ompss2")
-message("- Add benchmark: ${EXECUTABLE}")
-
-add_executable(${EXECUTABLE} jacobi_taskfor_ompss2.c)
-target_link_libraries(${EXECUTABLE} argparser base)
-
-add_test(NAME Test_${EXECUTABLE}
-  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
-
-# jacobi serial
-if (WITH_SERIAL)
-  set(EXECUTABLE "${TEST}_serial")
-  message("- Add benchmark: ${EXECUTABLE}")
-
-  add_executable(${EXECUTABLE} jacobi_serial.c)
-  target_link_libraries(${EXECUTABLE} argparser base)
-
-  add_test(NAME Test_jacobi_serial
-    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
-endif ()
 
 # install (copy) scripts
 # Submit

@@ -24,42 +24,44 @@ extern "C" {
 
 #include "benchmarks_ompss.h"
 
-	void jacobi_base(
-		const double * __restrict__ A,
-		double Bi,
-		const double * __restrict__ xin,
-		double * __restrict__ xouti, size_t dim
-	);
+void jacobi(const double *A, const double *B,
+            const double *xin, double *xout, size_t ts, size_t dim
+) {
+	#if BLAS == 0
 
-	void jacobi(const double *A, const double *B,
-	            const double *xin, double *xout, size_t ts, size_t dim
-	) {
+	inst_event(USER_EVENT, USER_JACOBI);
+	for (size_t i = 0; i < ts; ++i) {
+		xout[i] = B[i];
 
-		myassert(dim < (size_t) INT_MAX);
-
-		const char TR = 'T';
-		const int M = (int) dim;
-		const int N = (int) ts;
-		const double alpha = 1.0;
-		const double beta = 1.0;
-		const int inc = 1;
-
-		inst_blas_kernel(false, BLAS_COPY, 0, 0, 0);
-		dcopy_(&N, B, &inc, xout, &inc);
-
-		inst_blas_kernel(false, BLAS_GEMV, 0, 0, 0);
-		dgemv_(&TR, &M, &N, &alpha, A, &M, xin, &inc, &beta, xout, &inc);
-
-		// for (size_t i = 0; i < ts; ++i) {
-		// 	inst_event(9910002, dim);
-
-		// 	jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
-
-		// 	inst_event(9910002, 0);
-		// }
-
-		inst_blas_kernel(false, BLAS_NONE, 0, 0, 0);
+		for (size_t j = 0; j < dim; ++j) {
+			xout[i] += (A[i * dim + j] * xin[j]);
+		}
 	}
+	inst_event(USER_EVENT, USER_NONE);
+
+	#elif BLAS == 1
+
+	inst_blas_kernel(false, BLAS_COPY, 0, 0, 0);
+	myassert(dim < (size_t) INT_MAX);
+
+	const char TR = 'T';
+	const int M = (int) dim;
+	const int N = (int) ts;
+	const double alpha = 1.0;
+	const double beta = 1.0;
+	const int inc = 1;
+
+	dcopy_(&N, B, &inc, xout, &inc);
+
+	inst_blas_kernel(false, BLAS_GEMV, 0, 0, 0);
+	dgemv_(&TR, &M, &N, &alpha, A, &M, xin, &inc, &beta, xout, &inc);
+
+	inst_blas_kernel(false, BLAS_NONE, 0, 0, 0);
+
+	#else // BLAS
+	#error No valid BLAS value
+	#endif // BLAS
+}
 
 #ifdef __cplusplus
 }
