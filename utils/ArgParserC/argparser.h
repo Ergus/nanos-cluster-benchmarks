@@ -68,7 +68,7 @@ void reset_timer(timer *out);
    2) format for printf without %, should not be repeated
    3) function to convert FROM char)
    4) Format to convert TO char (default printf) */
-#define TYPES										\
+#define TYPES											\
 	F(int, int, d, sscanf, "%d")						\
 	F(double, double, lg, sscanf, "%lg")				\
 	F(size_t, size_t, zu, sscanf, "%zu")				\
@@ -124,22 +124,23 @@ list_for(ttimer);
 	F(generic_type, reportables)				\
 	F(ttimer, ttimers)
 
-typedef struct global_args_t {
+struct _global_args_t{
 	int argc;
 	char **argv;
 	int args_it;
 	#define F(T, N) T##_list *N;
 	GLOBALS
 	#undef F
-} global_args_t;
+	enum {_format_raw = 0, _format_json, _nformats} format;
+};
 
-extern global_args_t *sing;
+extern struct _global_args_t *sing;
 
 // Expandable macros to add arguments to parse.
 #define F(N, T,...)														\
 	void set_gt_##N (generic_type *out, const char name[], const T val); \
-	const T create_cl_##N (const char name[]);								\
-	const T create_optional_cl_##N (const char name[], const T def);			\
+	const T create_cl_##N (const char name[]);							\
+	const T create_optional_cl_##N (const char name[], const T def);	\
 	const T create_reportable_##N (const char name[], const T value);
 	TYPES
 #undef F
@@ -150,6 +151,7 @@ void init_args(int argc, char **argv);
 void report_args();
 void report_args_json();
 void free_args();
+int get_rest_args(char ***rest);
 
 #ifdef __cplusplus
 }
