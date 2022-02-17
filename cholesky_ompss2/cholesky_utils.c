@@ -18,6 +18,7 @@
 #include "cholesky_utils.h"
 
 
+
 //############## Blas wrappers #####################
 
 void oss_potrf(const size_t bsize, double A[bsize][bsize], size_t i)
