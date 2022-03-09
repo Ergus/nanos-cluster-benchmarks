@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef benchmarks_h
-#define benchmarks_h
+#ifndef MACROS_H
+#define MACROS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +38,8 @@ extern "C" {
 #ifdef _OPENMP
 #include <omp.h>
 #else // _OPENMP
+
+#warning "HEEEEEE"
 
 #ifndef _OMPSS_2
 #warning "Compiling without OpenMP or OmpSs"
@@ -88,9 +90,9 @@ extern "C" {
 #define dbprintf_if(...)
 #endif
 
-	inline FILE *get_file(const char prefix[64], const char name[64],
-	               const char *restrict mode)
-	{
+	extern inline FILE *get_file(const char prefix[64], const char name[64],
+	                             const char *restrict mode
+	) {
 		FILE *fp = stdout;
 		if (prefix != NULL) {
 			char filename[256];
@@ -101,8 +103,8 @@ extern "C" {
 		return fp;
 	}
 
-	inline void print_matrix_header(FILE *fp, const char name[64],
-	                                const size_t rows, const size_t cols
+	extern inline void print_matrix_header(FILE *fp, const char name[64],
+	                                       const size_t rows, const size_t cols
 	) {
 		fprintf(fp, "# name: %s\n", name);
 		fprintf(fp, "# type: matrix\n");
@@ -110,8 +112,8 @@ extern "C" {
 		fprintf(fp, "# columns: %lu\n", cols);
 	}
 
-	inline void print_matrix_data(FILE *fp, const double * const mat,
-	                              const size_t rows, const size_t cols
+	extern inline void print_matrix_data(FILE *fp, const double * const mat,
+	                                     const size_t rows, const size_t cols
 	) {
 		for (size_t i = 0; i < rows; ++i) {
 			for(size_t j = 0; j < cols; ++j) {
@@ -191,4 +193,4 @@ extern "C" {
 }
 #endif
 
-#endif // benchmarks_h
+#endif // MACROS_H
