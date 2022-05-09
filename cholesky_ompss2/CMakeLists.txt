@@ -14,16 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 set(TEST cholesky)
-set(BLA_VENDOR Intel10_64ilp)
-find_package(BLAS REQUIRED)
-
-find_path(
-  MKL_INCLUDE_DIR mkl.h
-  HINTS ENV MKLROOT
-  PATH_SUFFIXES include)
-
-# Add the executables and link
-include_directories(${MKL_INCLUDE_DIR})
 
 add_executable(${TEST}_weak cholesky_weak.c cholesky_utils.c)
 target_link_options(${TEST}_weak PUBLIC ${BLAS_LINKER_FLAGS})

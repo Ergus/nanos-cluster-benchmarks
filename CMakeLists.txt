@@ -20,7 +20,15 @@
 cmake_minimum_required(VERSION 3.12.4)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-find_package(MERCURIUM REQUIRED COMPONENTS intel)
+option(WITH_GNU "Build tests with gcc mercurium" true)
+
+if (WITH_GNU)
+  find_package(MERCURIUM REQUIRED COMPONENTS gnu)
+else ()
+  find_package(INTEL REQUIRED)
+  add_compile_options(--Wn,-diag-disable=858)
+  find_package(MERCURIUM REQUIRED COMPONENTS intel)
+endif ()
 
 project(nanos6_benchmarks)
 
@@ -33,6 +41,7 @@ cmake_dependent_option(WITH_PRVANIM "Build with PRVANIM" true "WITH_EXTRAE" fals
 option(WITH_KEEP "Keep mcc intermediate files" false)
 option(WITH_SERIAL "Build serial version of the code when available." false)
 option(WITH_NONODE "Build the code version without the node hint." false)
+option(WITH_MKL "Use MKL as BLAS library." false)
 
 
 set(CMAKE_CXX_STANDARD 11)
@@ -73,24 +82,26 @@ find_package(Numa REQUIRED)
 include_directories(${NUMA_INCLUDES})
 link_libraries(${NUMA_LIBRARIES})
 
-find_package(MPI REQUIRED)
+find_package(MPI REQUIRED COMPONENTS C)
 link_libraries(MPI::MPI_C)
 
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
-find_package(INTEL REQUIRED)
-add_compile_options(--Wn,-diag-disable=858)
-
 # BLAS
-set(BLA_VENDOR Intel10_64lp_seq)
+if (WITH_MKL)
+  set(BLA_VENDOR Intel10_64lp_seq)
+
+  find_path(
+    MKL_INCLUDE_DIR mkl.h
+    HINTS ENV MKLROOT
+    PATH_SUFFIXES include)
+
+  include_directories(${MKL_INCLUDE_DIR})
+else ()
+  set(BLA_VENDOR OpenBLAS)
+endif ()
 find_package(BLAS REQUIRED)
 
-find_path(
-  MKL_INCLUDE_DIR mkl.h
-  HINTS ENV MKLROOT
-  PATH_SUFFIXES include)
-
-include_directories(${MKL_INCLUDE_DIR})
 add_link_options(${BLAS_LINKER_FLAGS})
 link_libraries(${BLAS_LIBRARIES})
 
