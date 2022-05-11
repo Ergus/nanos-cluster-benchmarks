@@ -39,8 +39,6 @@ extern "C" {
 #include <omp.h>
 #else // _OPENMP
 
-#warning "HEEEEEE"
-
 #ifndef _OMPSS_2
 #warning "Compiling without OpenMP or OmpSs"
 #endif // _OMPSS_2
@@ -97,6 +95,7 @@ extern "C" {
 		if (prefix != NULL) {
 			char filename[256];
 			sprintf(filename,"%s_%s.mat", prefix, name);
+			(void) fclose;
 			fp = fopen(filename, mode);
 			myassert(fp);
 		}
