@@ -60,7 +60,7 @@ for NTASKS in ${ARGS[N]}; do
 	for EXE in ${EXES}; do
 		echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXES_COUNT}"
 
-		COMMAND="mpirun -np=${NTASKS} ./${EXE} ${ARGS[D]} ${ARGS[B]} ${ARGS[I]}"
+		COMMAND="mpirun -np ${NTASKS} ./${EXE} ${ARGS[D]} ${ARGS[B]} ${ARGS[I]}"
 
 		echo -e "# Starting command: ${COMMAND}"
 		echo "# ======================================"
