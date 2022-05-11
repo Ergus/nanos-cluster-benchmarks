@@ -39,8 +39,6 @@ extern "C" {
 #include <omp.h>
 #else // _OPENMP
 
-#warning "HEEEEEE"
-
 #ifndef _OMPSS_2
 #warning "Compiling without OpenMP or OmpSs"
 #endif // _OMPSS_2
