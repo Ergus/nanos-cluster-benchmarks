@@ -95,6 +95,7 @@ extern "C" {
 		if (prefix != NULL) {
 			char filename[256];
 			sprintf(filename,"%s_%s.mat", prefix, name);
+			(void) fclose;
 			fp = fopen(filename, mode);
 			myassert(fp);
 		}
