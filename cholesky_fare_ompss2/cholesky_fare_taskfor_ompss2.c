@@ -216,12 +216,12 @@ void cholesky_single(
 	} // for k
 }
 
-inline int min(int x, int y)
+static inline int min(int x, int y)
 {
 	return (x < y) ? x : y;
 }
 
-inline int max(int x, int y)
+static inline int max(int x, int y)
 {
 	return (x < y) ? y : x;
 }
