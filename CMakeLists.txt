@@ -32,7 +32,7 @@ endif()
 
 if ("${CCOMPILER}" STREQUAL "intel")
   find_package(INTEL REQUIRED)
-  add_compile_options(--Wn,-diag-disable=858)
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} --Wn,-diag-disable=858)
 endif ()
 
 find_package(MERCURIUM REQUIRED COMPONENTS ${CCOMPILER})
@@ -60,14 +60,14 @@ if (CMAKE_BUILD_TYPE MATCHES ".*Debug.*")
 endif()
 
 set(COMPILE_DEFINITIONS "${COMPILE_DEFINITIONS} _GNU_SOURCE")
-set(COMPILE_OPTIONS "${COMPILE_OPTIONS} --ompss-2 $<$<BOOL:WITH_KEEP>:-k>")
+set(COMPILE_OPTIONS ${COMPILE_OPTIONS} --ompss-2 $<$<BOOL:WITH_KEEP>:-k>)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
 # Enable address sanitizer
 if (WITH_ASAN)
   message("Using ASAN")
   set(COMPILE_DEFINITIONS "${COMPILE_DEFINITIONS} __WITH_ASAN=1")
-  set(COMPILE_OPTIONS "${COMPILE_OPTIONS} -fno-omit-frame-pointer -fsanitize=address")
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -fno-omit-frame-pointer -fsanitize=address)
   set(CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
 endif ()
