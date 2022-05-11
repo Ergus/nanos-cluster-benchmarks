@@ -31,6 +31,12 @@ echo "# Execution start time: $(date)"
 echo "# Args: $*"
 printargs "# "
 
+# Check NANOS6_HOME is set and a valid directory
+if [ -z ${NANOS6_HOME} ] || [ ! -d ${NANOS6_HOME} ]; then
+    echo "Error: Envvar 'NANOS6_HOME' is incorrect" >&2
+    exit 2
+fi
+
 # Briefly check the executable validity as our argparser can't know.
 if [ -z "${ARGS[REST]}" ]; then  # Check that there are executables to run
     echo "Error: No input executable provided ('ARGS[REST]' is empty)" >&2
@@ -56,6 +62,8 @@ EXES=${ARGS[REST]}
 EXES_COUNT=$(echo $EXES | wc -w)
 
 # If we are here then we can start execution.
+export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
+
 for NTASKS in ${ARGS[N]}; do
 	for EXE in ${EXES}; do
 		echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXES_COUNT}"
@@ -64,7 +72,7 @@ for NTASKS in ${ARGS[N]}; do
 
 		echo -e "# Starting command: ${COMMAND}"
 		echo "# ======================================"
-		for it in $(seq ${REPEATS}); do
+		for it in $(seq ${ARGS[R]}); do
 			echo "# Starting it: ${it} $(date)"
 			start=${SECONDS}
 			${COMMAND}
