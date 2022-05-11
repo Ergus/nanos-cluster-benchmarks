@@ -20,15 +20,22 @@
 cmake_minimum_required(VERSION 3.12.4)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-option(WITH_GNU "Build tests with gcc mercurium" true)
 
-if (WITH_GNU)
-  find_package(MERCURIUM REQUIRED COMPONENTS gnu)
-else ()
+set(CCOMPILER gnu CACHE STRING "C compiler to use gnu or intel")
+set(CCOMPILERVALUES gnu intel)
+set_property(CACHE CCOMPILER PROPERTY STRINGS ${CCOMPILERVALUES})
+
+list(FIND CCOMPILERVALUES ${CCOMPILER} INDEX)
+if(INDEX EQUAL -1)
+  message(FATAL_ERROR "Invalid CCOMPILER value: ${CCOMPILER}")
+endif()
+
+if ("${CCOMPILER}" STREQUAL "intel")
   find_package(INTEL REQUIRED)
   add_compile_options(--Wn,-diag-disable=858)
-  find_package(MERCURIUM REQUIRED COMPONENTS intel)
 endif ()
+
+find_package(MERCURIUM REQUIRED COMPONENTS ${CCOMPILER})
 
 project(nanos6_benchmarks)
 
@@ -90,20 +97,12 @@ find_package(Python MODULE COMPONENTS Interpreter NumPy)
 # BLAS
 if (WITH_MKL)
   set(BLA_VENDOR Intel10_64lp_seq)
-
-  find_path(
-    MKL_INCLUDE_DIR mkl.h
-    HINTS ENV MKLROOT
-    PATH_SUFFIXES include)
-
-  include_directories(${MKL_INCLUDE_DIR})
-else ()
-  set(BLA_VENDOR OpenBLAS)
 endif ()
-find_package(BLAS REQUIRED)
 
-add_link_options(${BLAS_LINKER_FLAGS})
-link_libraries(${BLAS_LIBRARIES})
+find_package(LAPACK REQUIRED)
+add_link_options(${LAPACK_LINKER_FLAGS})
+link_libraries(${LAPACK_LIBRARIES})
+
 
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)
