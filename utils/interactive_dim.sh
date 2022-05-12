@@ -48,14 +48,6 @@ for EXE in ${ARGS[REST]}; do
         echo "Error: '$EXE' is not an executable file" >&2
         exit 2
     fi
-
-    PREFIX=${EXE%%_*}
-    if [ -z ${TEST} ]; then      # check all inputs have a common prefix.
-        TEST=${PREFIX}
-    elif [ ${TEST} != ${PREFIX} ]; then
-        echo "Error: No common prefix (${TEST} != ${PREFIX})" >&2
-        exit 3
-    fi
 done
 
 EXES=${ARGS[REST]}
