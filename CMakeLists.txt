@@ -17,7 +17,7 @@
 # 3.12.4 required to use FindPython
 # 3.22 May introduce some issues with cmake_dependent_option (See:
 # https://cmake.org/cmake/help/latest/policy/CMP0127.html)
-cmake_minimum_required(VERSION 3.12.4)
+cmake_minimum_required(VERSION 3.10)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
@@ -59,17 +59,16 @@ if (CMAKE_BUILD_TYPE MATCHES ".*Debug.*")
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 
-add_compile_definitions(_GNU_SOURCE)
-add_compile_options(--ompss-2 $<$<BOOL:WITH_KEEP>:-k>)
-add_link_options(--ompss-2)
+set(COMPILE_DEFINITIONS "${COMPILE_DEFINITIONS} _GNU_SOURCE")
+set(COMPILE_OPTIONS "${COMPILE_OPTIONS} --ompss-2 $<$<BOOL:WITH_KEEP>:-k>")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
 # Enable address sanitizer
 if (WITH_ASAN)
   message("Using ASAN")
-  add_compile_definitions(__WITH_ASAN=1)
-  add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
-
-  set (CMAKE_EXE_LINKER_FLAGS
+  set(COMPILE_DEFINITIONS "${COMPILE_DEFINITIONS} __WITH_ASAN=1")
+  set(COMPILE_OPTIONS "${COMPILE_OPTIONS} -fno-omit-frame-pointer -fsanitize=address")
+  set(CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
 endif ()
 
@@ -79,7 +78,7 @@ if (WITH_EXTRAE)
   set(USE_INSTRUMENT "extrae")
   find_package(Extrae REQUIRED COMPONENTS nanosmpitrace)
   if (Extrae_FOUND)
-    add_compile_definitions(__WITH_EXTRAE=1 $<$<BOOL:WITH_PRVANIM>:__WITH_PRVANIM=1>)
+    set(COMPILE_DEFINITIONS "${COMPILE_DEFINITIONS} __WITH_EXTRAE=1 $<$<BOOL:WITH_PRVANIM>:__WITH_PRVANIM=1>")
     include_directories(${EXTRAE_INCLUDES})
     link_libraries(${EXTRAE_LIBRARIES})
   endif ()
@@ -100,9 +99,8 @@ if (WITH_MKL)
 endif ()
 
 find_package(LAPACK REQUIRED)
-add_link_options(${LAPACK_LINKER_FLAGS})
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS}")
 link_libraries(${LAPACK_LIBRARIES})
-
 
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)
