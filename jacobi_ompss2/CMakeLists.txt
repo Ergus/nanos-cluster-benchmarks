@@ -55,7 +55,7 @@ endforeach ()
 
 # Submit
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_dim.sh @ONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submitter_dim.sh" submitter_dim.sh @ONLY)
 
 # Interactive
 configure_file("${PROJECT_SOURCE_DIR}/utils/interactive_dim.sh" interactive_dim.sh @ONLY)
