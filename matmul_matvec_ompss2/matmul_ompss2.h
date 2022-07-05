@@ -164,11 +164,9 @@ extern "C" {
 
 			for (size_t i = 0; i < rows; i += rowsPerNode) { // loop nodes
 
-#if WITHNODE == 1
-				const int nodeid = i / rowsPerNode;
-#else
-				const int nodeid = nanos6_cluster_no_hint;
-#endif
+				const int nodeid
+					= (WITHNODE ? i / rowsPerNode : nanos6_cluster_no_hint);
+
 				#pragma oss task weakout(ret[i * cols; rowsPerNode * cols]) \
 					node(nodeid) label("initalize_weak")
 				{
