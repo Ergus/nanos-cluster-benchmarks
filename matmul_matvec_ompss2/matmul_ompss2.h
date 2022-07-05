@@ -164,7 +164,7 @@ extern "C" {
 
 			for (size_t i = 0; i < rows; i += rowsPerNode) { // loop nodes
 
-#if WITH_NODE == 1
+#if WITHNODE == 1
 				const int nodeid = i / rowsPerNode;
 #else
 				const int nodeid = nanos6_cluster_no_hint;
