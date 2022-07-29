@@ -50,17 +50,19 @@ option(WITH_SERIAL "Build serial version of the code when available." false)
 option(WITH_NONODE "Build the code version without the node hint." false)
 option(WITH_MKL "Use MKL as BLAS library." true)
 
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
+
+set(CTEST_OUTPUT_ON_FAILURE ON)
+cmake_policy(SET CMP0074 NEW)
 
 if (CMAKE_BUILD_TYPE MATCHES ".*Debug.*")
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 
 add_definitions(-D_GNU_SOURCE)
-add_compile_options(--ompss-2 $<$<BOOL:WITH_KEEP>:-k>)
+add_compile_options(--ompss-2 --parallel $<$<BOOL:WITH_KEEP>:--keep-files>)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
 # Enable address sanitizer
