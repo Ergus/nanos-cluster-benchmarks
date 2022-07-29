@@ -127,6 +127,7 @@ extern "C" {
 	                           const size_t rows, const size_t cols,
 	                           const char prefix[64], const char name[64]
 	) {
+		myassert(mat != NULL);
 		FILE *fp = get_file(prefix, name, "w+");
 		print_matrix_header(fp, name, rows, cols);
 		print_matrix_data(fp, mat, rows, cols);
