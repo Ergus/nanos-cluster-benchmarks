@@ -48,7 +48,7 @@ cmake_dependent_option(WITH_PRVANIM "Build with PRVANIM" true "WITH_EXTRAE" fals
 option(WITH_KEEP "Keep mcc intermediate files" false)
 option(WITH_SERIAL "Build serial version of the code when available." false)
 option(WITH_NONODE "Build the code version without the node hint." false)
-option(WITH_MKL "Use MKL as BLAS library." false)
+option(WITH_MKL "Use MKL as BLAS library." true)
 
 
 set(CMAKE_CXX_STANDARD 11)
@@ -72,6 +72,9 @@ if (WITH_ASAN)
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
 endif ()
 
+find_package(MPI REQUIRED COMPONENTS C)
+link_libraries(MPI::MPI_C)
+
 # Enable Extrae
 set(USE_INSTRUMENT "none")
 if (WITH_EXTRAE)
@@ -87,9 +90,6 @@ endif()
 find_package(Numa REQUIRED)
 include_directories(${NUMA_INCLUDES})
 link_libraries(${NUMA_LIBRARIES})
-
-find_package(MPI REQUIRED COMPONENTS C)
-link_libraries(MPI::MPI_C)
 
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
@@ -124,10 +124,10 @@ foreach (child ${children})
 endforeach ()
 
 # For the toml file ==============
-set(USE_NAMESPACE_TOML false)
+set(DISABLE_REMOTE_TOML true)
 if (WITH_NAMESPACE)
-  message("-- Using NAMESPACE")
-  set(USE_NAMESPACE_TOML true)
+  message("-- Using remote propagation (namespace)")
+  set(DISABLE_REMOTE_TOML false)
 endif ()
 
 set(VERSION_DEBUG_TOML true)

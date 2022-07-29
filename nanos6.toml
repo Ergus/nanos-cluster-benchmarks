@@ -137,9 +137,7 @@
 	# suitable address. Default is 0x00000000
 	va_start = 0x00000000
 	# Use namespace code.
-	use_namespace = @USE_NAMESPACE_TOML@
-	# Disable propagation of dependencies in the remote namespace. Default is false
-	disable_remote = false
+	disable_remote = @DISABLE_REMOTE_TOML@
 	# Disable the "autowait" feature, which disables early release for accesses of offloaded
 	# tasks that are not propagated in the remote namespace. Default is false
 	disable_autowait = false
