@@ -194,6 +194,38 @@ extern "C" {
 		return ret;
 	}
 
+	// checkpoint and restart functions.
+	double *alloc_restart(const size_t rows, size_t cols, int process, int id)
+	{
+		myassert(process != 0);
+		const size_t size = cols * rows;
+
+		double *ret = (double *) nanos6_dmalloc(
+			size * sizeof(double), nanos6_equpart_distribution, 0, NULL
+		);
+		myassert(ret != NULL);
+
+		#pragma oss taskwait
+
+		int rc = nanos6_serialize(ret, size * sizeof(double), process, id, false);
+		myassert(rc == 0);
+
+		return ret;
+	}
+
+	void checkpoint_matrix(
+		double *mat, const size_t rows, size_t cols, int process, int id
+	) {
+		myassert(process != 0);
+		myassert(id != 0);
+		const size_t size = cols * rows;
+
+		#pragma oss taskwait 
+
+		int rc = nanos6_serialize(mat, size * sizeof(double), process, id, true);
+		myassert(rc == 0);
+	}
+
 
 #ifdef __cplusplus
 }

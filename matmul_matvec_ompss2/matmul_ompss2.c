@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019  Jimmy Aguilar Mena
+ * Copyright (C) 2022  Jimmy Aguilar Mena
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -190,20 +190,46 @@ int main(int argc, char* argv[])
 	const char *PREFIX = basename(argv[0]);
 	const size_t ROWS = create_cl_size_t ("Rows");
 	const size_t TS = create_cl_size_t ("Tasksize");
-	const size_t ITS = create_optional_cl_size_t ("Iterations", 1);
+	const size_t ITS = create_cl_size_t ("Iterations");
 	const int PRINT = create_optional_cl_int ("Print", 0);
+	const size_t CHECKPOINT = create_optional_cl_size_t("Checkpoint", 0);
+	const size_t RESTART = create_optional_cl_size_t("Restart", 0);
+	const size_t TIME_S = create_optional_cl_size_t("Epoch_secs", 0);
+	const size_t TIME_NS = create_optional_cl_size_t("Epoch_nsecs", 0);
+
+	if (TIME_S != 0 && TIME_NS != 0) {
+		struct timespec t1 = {.tv_sec = TIME_S, .tv_nsec = TIME_NS};
+
+		struct timespec t2;
+		clock_gettime(CLOCK_REALTIME, &t2);
+
+		struct timespec delta = diffTime(&t1, &t2);
+		create_reportable_double("srun_time", getNS(&delta));
+	}
 
 	inst_register_events();  // Register the events in the instrumentation
 
-	printf("# Initializing data\n");
 	timer ttimer = create_timer("Total_time");
 
 	const size_t colsBC = (ISMATVEC == 1 ? 1 : ROWS);
 
-	double *A = alloc_init(ROWS, ROWS, TS, true);    // this initialized by blocks ts x rows
-	double *B = alloc_init(ROWS, colsBC, TS, true);  // this splits the array in ts
-	double *C = alloc_init(ROWS, colsBC, TS, false);
-	#pragma oss taskwait
+	double *A = NULL, *B  = NULL, *C = NULL;
+
+	if (RESTART != 0) {
+		printf("# Recovering checkpoint: %zu\n", RESTART);
+		timer rtimer = create_timer("Restart_time");
+		A = alloc_restart(ROWS, ROWS, RESTART, 1);    // this initialized by blocks ts x rows
+		B = alloc_restart(ROWS, colsBC, RESTART, 2);  // this splits the array in ts
+		C = alloc_restart(ROWS, colsBC, RESTART, 3);
+		#pragma oss taskwait
+		stop_timer(&rtimer);
+	} else {
+		printf("# Initializing data\n");
+		A = alloc_init(ROWS, ROWS, TS, true);    // this initialized by blocks ts x rows
+		B = alloc_init(ROWS, colsBC, TS, true);  // this splits the array in ts
+		C = alloc_init(ROWS, colsBC, TS, false);
+		#pragma oss taskwait
+	}
 
 	printf("# Starting algorithm\n");
 	timer atimer = create_timer("Algorithm_time");
@@ -231,9 +257,20 @@ int main(int argc, char* argv[])
 		#pragma oss taskwait
 	}
 
+	if (CHECKPOINT != 0) {
+		timer ctimer = create_timer("Checkpoint_time");
+		checkpoint_matrix(A, ROWS, ROWS, CHECKPOINT, 1);
+		checkpoint_matrix(B, ROWS, colsBC, CHECKPOINT, 2);
+		checkpoint_matrix(C, ROWS, colsBC, CHECKPOINT, 3);
+		#pragma oss taskwait
+		stop_timer(&ctimer);
+	}
+
+	timer ftimer = create_timer("Free_time");
 	free_matrix(A, ROWS * ROWS);
 	free_matrix(B, ROWS * colsBC);
 	free_matrix(C, ROWS * colsBC);
+	stop_timer(&ftimer);
 
 	create_reportable_int("worldsize", nanos6_get_num_cluster_nodes());
 	create_reportable_int("cpu_count", nanos6_get_num_cpus());
