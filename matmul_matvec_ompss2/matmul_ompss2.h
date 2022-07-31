@@ -15,12 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MATVEC_H
-#define MATVEC_H
+#ifndef MATMUL_OMPSS2_H
+#define MATMUL_OMPSS2_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdio.h>
+#include <libgen.h>
 
 #include "benchmarks_ompss.h"
 
@@ -58,7 +61,9 @@ extern "C" {
 		#error No valid BLAS value
 		#endif // BLAS
 	}
-#else
+
+#else // ISMATVEC => ISMATMUL
+
 	void matmul_base(const double *A, const double *B, double * const C,
 	                 size_t ts, size_t dim, size_t colsBC
 	) {
@@ -104,7 +109,7 @@ extern "C" {
 		#error No valid BLAS value
 		#endif // BLAS
 	}
-#endif
+#endif // ISMATVEC
 
 
 	void free_matrix(double *mat, size_t size)
@@ -142,7 +147,6 @@ extern "C" {
 		#pragma oss taskwait
 		return success;
 	}
-
 
 	double *alloc_init(const size_t rows, size_t cols, size_t ts, bool init)
 	{
@@ -205,8 +209,6 @@ extern "C" {
 		);
 		myassert(ret != NULL);
 
-		#pragma oss taskwait
-
 		int rc = nanos6_serialize(ret, size * sizeof(double), process, id, false);
 		myassert(rc == 0);
 
@@ -220,15 +222,176 @@ extern "C" {
 		myassert(id != 0);
 		const size_t size = cols * rows;
 
-		#pragma oss taskwait 
-
 		int rc = nanos6_serialize(mat, size * sizeof(double), process, id, true);
 		myassert(rc == 0);
 	}
 
+//=================== Conditionals after here ==================================
+
+#if TASKTYPE == 0 // strong flat
+
+	void matvec_tasks_ompss2(const double *A, const double *B, double *C,
+	                         size_t ts, size_t dim, size_t colsBC, size_t it
+	) {
+		if (it == 0) {
+			printf("# %s strong flat tasks ompss2\n",
+			       (ISMATVEC ? "matvec" : "matmul"));
+		}
+
+		myassert(ts <= dim);
+		modcheck(dim, ts);
+
+		const size_t numNodes = nanos6_get_num_cluster_nodes();
+		const size_t rowsPerNode = dim / numNodes;
+
+		for (size_t i = 0; i < dim; i += ts) {
+			const int nodeid = (WITHNODE ? i / rowsPerNode : nanos6_cluster_no_hint);
+
+			#pragma oss task in(A[i * dim; ts * dim])	\
+				in(B[0; dim * colsBC])					\
+				out(C[i * colsBC; ts * colsBC])			\
+				node(nodeid) label("strongmatvec")
+			matmul_base(&A[i * dim], B, &C[i * colsBC], ts, dim, colsBC);
+		}
+	}
+
+#elif TASKTYPE == 1 // strong nested
+
+	void matvec_tasks_ompss2(const double *A, const double *B, double *C,
+	                         size_t ts, size_t dim, size_t colsBC, size_t it
+	) {
+		if (it == 0) {
+			printf("# %s strong nested task ompss2 withnode=%d\n",
+			       (ISMATVEC ? "matvec" : "matmul"), WITHNODE);
+		}
+
+		myassert(ts <= dim);
+		modcheck(dim, ts);
+
+		const size_t numNodes = nanos6_get_num_cluster_nodes();
+
+		const size_t rowsPerNode = dim / numNodes;
+		myassert(ts <= rowsPerNode);
+		modcheck(rowsPerNode, ts);
+
+		for (size_t i = 0; i < dim; i += rowsPerNode) {
+
+			const int nodeid = (WITHNODE ? i / rowsPerNode : nanos6_cluster_no_hint);
+
+			#pragma oss task in(A[i * dim; rowsPerNode * dim])			\
+				in(B[0; dim * colsBC])									\
+				out(C[i * colsBC; rowsPerNode * colsBC])				\
+				node(nodeid) label("weakmatvec")
+			{
+				for (size_t j = i; j < i + rowsPerNode; j += ts) {
+					#pragma oss task in(A[j * dim; ts * dim])			\
+						in(B[0; dim * colsBC])							\
+						out(C[j * colsBC; ts * colsBC])					\
+						node(nanos6_cluster_no_offload) label("strongmatvec")
+					matmul_base(&A[j * dim], B, &C[j * colsBC], ts, dim, colsBC);
+				}
+			}
+		}
+	}
+
+#elif TASKTYPE == 2 // taskfor
+
+	void matvec_tasks_ompss2(const double *A, const double *B, double *C,
+	                         size_t nchunks, size_t dim, size_t colsBC, size_t it
+	) {
+		if (it == 0) {
+			printf("# %s weak taskfor ompss2 withnode=%d\n",
+			       (ISMATVEC ? "matvec" : "matmul"), WITHNODE);
+		}
+
+		const size_t numNodes = nanos6_get_num_cluster_nodes();
+		myassert(nchunks <= dim);
+		modcheck(dim, nchunks);
+
+		const size_t ts = dim / numNodes / nchunks;
+		myassert(ts * numNodes * nchunks == dim);
+
+		const size_t rowsPerNode = dim / numNodes;
+		myassert(ts <= rowsPerNode);
+		modcheck(rowsPerNode, ts);
+
+		for (size_t i = 0; i < dim; i += rowsPerNode) {
+
+			const int nodeid = (WITHNODE ? i / rowsPerNode : nanos6_cluster_no_hint);
+
+			#pragma oss task weakin(A[i * dim; rowsPerNode * dim])		\
+				weakin(B[0; dim * colsBC])								\
+				weakout(C[i * colsBC; rowsPerNode * colsBC])			\
+				node(nodeid)											\
+				firstprivate(ts) label("weakmatvec_task")
+			{
+				#pragma oss task for in(A[i * dim; rowsPerNode * dim])	\
+					in(B[0; dim * colsBC])								\
+					out(C[i * colsBC; rowsPerNode * colsBC])			\
+					firstprivate(ts) chunksize(ts)						\
+					node(nanos6_cluster_no_offload)						\
+					label("taskfor_matvec")
+				for (size_t j = i; j < i + rowsPerNode; j += ts) {
+					matmul_base(&A[j * dim], B, &C[j * colsBC], ts, dim, colsBC);
+				}
+			}
+		}
+	}
+
+#elif TASKTYPE == 3 // weak tasks
+
+	void matvec_tasks_ompss2(const double *A, const double *B, double *C,
+	                         size_t ts, size_t dim, size_t colsBC, size_t it
+	) {
+		if (it == 0) {
+			printf("# %s weak task FETCHTASK=%d withnode=%d\n",
+			       (ISMATVEC ? "matvec" : "matmul"), FETCHTASK, WITHNODE);
+		}
+
+		myassert(ts <= dim);
+		modcheck(dim, ts);
+
+		const size_t numNodes = nanos6_get_num_cluster_nodes();
+
+		const size_t rowsPerNode = dim / numNodes;
+		myassert(ts <= rowsPerNode);
+		modcheck(rowsPerNode, ts);
+
+		for (size_t i = 0; i < dim; i += rowsPerNode) {
+
+			const int nodeid = (WITHNODE ? i / rowsPerNode : nanos6_cluster_no_hint);
+
+			#pragma oss task weakin(A[i * dim; rowsPerNode * dim])		\
+				weakin(B[0; dim * colsBC])								\
+				weakout(C[i * colsBC; rowsPerNode * colsBC])			\
+				node(nodeid) label("weakmatvec")
+			{
+				#if FETCHTASK == 1
+				#pragma oss task in(A[i * dim; rowsPerNode * dim])		\
+					in(B[0; dim * colsBC])								\
+					out(C[i * colsBC; rowsPerNode * colsBC])			\
+					node(nanos6_cluster_no_offload) label("fetchtask")
+				{
+				}
+				#endif
+
+				for (size_t j = i; j < i + rowsPerNode; j += ts) {
+					#pragma oss task in(A[j * dim; ts * dim])			\
+						in(B[0; dim * colsBC])							\
+						out(C[j * colsBC; ts * colsBC])					\
+						node(nanos6_cluster_no_offload) label("strongmatvec")
+					{
+						matmul_base(&A[j * dim], B, &C[j * colsBC], ts, dim, colsBC);
+					}
+				}
+			}
+		}
+	}
+
+#endif // TASKTYPE
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // MATMUL_OMPSS2_H

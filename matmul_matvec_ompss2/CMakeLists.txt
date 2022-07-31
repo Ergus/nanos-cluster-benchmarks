@@ -68,18 +68,21 @@ foreach (NODEID 0;1)
       foreach (TASKTYPEID 0;1;2)
 	list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPESUFIX)
 
-	# Executable
-	set(executable "${TEST}_${TASKTYPESUFIX}_${NODESUFIX}_${BLASSUFIX}_ompss2")
-	message("- Add benchmark: ${executable}")
-	add_executable(${executable} matmul_ompss2.c)
-	target_compile_definitions(${executable}
-	  PUBLIC WITHNODE=${NODEID}
-	  PUBLIC TASKTYPE=${TASKTYPEID}
-	  PUBLIC ISMATVEC=${ISMATVEC}
-	  PUBLIC BLAS=${BLAS})
-	target_link_libraries(${executable} argparser)
+	foreach (VERSION ompss2 resize)
+	  # Executable
+	  set(executable "${TEST}_${TASKTYPESUFIX}_${NODESUFIX}_${BLASSUFIX}_${VERSION}")
+	  message("- Add benchmark: ${executable}")
+	  add_executable(${executable} main_${VERSION}.c)
+	  target_compile_definitions(${executable}
+	    PUBLIC WITHNODE=${NODEID}
+	    PUBLIC TASKTYPE=${TASKTYPEID}
+	    PUBLIC ISMATVEC=${ISMATVEC}
+	    PUBLIC BLAS=${BLAS})
 
-	create_test_pair(${executable})
+	  if (VERSION STREQUAL ompss2)
+	    create_test_pair(${executable})
+	  endif ()
+	endforeach ()
       endforeach ()
 
       # weak tests.
@@ -87,17 +90,21 @@ foreach (NODEID 0;1)
       foreach (FETCHID 0;1)
 	list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
 
-	set(executable "${TEST}_${FETCHSUFIX}_${NODESUFIX}_${BLASSUFIX}_ompss2")
-	message("- Add benchmark: ${executable}")
-	add_executable(${executable} matmul_ompss2.c)
-	target_compile_definitions(${executable}
-	  PUBLIC TASKTYPE=3
-	  PUBLIC WITHNODE=${NODEID}
-	  PUBLIC ISMATVEC=${ISMATVEC}
-	  PUBLIC FETCHTASK=${FETCHID} 
-	  PUBLIC BLAS=${BLAS})
+	foreach (VERSION ompss2 resize)
+	  set(executable "${TEST}_${FETCHSUFIX}_${NODESUFIX}_${BLASSUFIX}_${VERSION}")
+	  message("- Add benchmark: ${executable}")
+	  add_executable(${executable} main_${VERSION}.c)
+	  target_compile_definitions(${executable}
+	    PUBLIC TASKTYPE=3
+	    PUBLIC WITHNODE=${NODEID}
+	    PUBLIC ISMATVEC=${ISMATVEC}
+	    PUBLIC FETCHTASK=${FETCHID} 
+	    PUBLIC BLAS=${BLAS})
 
-	create_test_pair(${executable})
+	  if (VERSION STREQUAL ompss2)
+	    create_test_pair(${executable})
+	  endif ()
+	endforeach ()
       endforeach ()
     endforeach ()
   endforeach ()
