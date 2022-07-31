@@ -62,7 +62,7 @@ if (CMAKE_BUILD_TYPE MATCHES ".*Debug.*")
 endif()
 
 add_definitions(-D_GNU_SOURCE)
-add_compile_options(--ompss-2 --parallel $<$<BOOL:WITH_KEEP>:--keep-files>)
+add_compile_options(--ompss-2 --parallel $<$<BOOL:${WITH_KEEP}>:--keep-files>)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
 
 # Enable address sanitizer
@@ -83,7 +83,7 @@ if (WITH_EXTRAE)
   set(USE_INSTRUMENT "extrae")
   find_package(Extrae REQUIRED COMPONENTS nanosmpitrace)
   if (Extrae_FOUND)
-    add_definitions(-D__WITH_EXTRAE=1 $<$<BOOL:WITH_PRVANIM>:-D__WITH_PRVANIM=1>)
+    add_definitions(-D__WITH_EXTRAE=1 $<$<BOOL:${WITH_PRVANIM}>:-D__WITH_PRVANIM=1>)
     include_directories(${EXTRAE_INCLUDES})
     link_libraries(${EXTRAE_LIBRARIES})
   endif ()

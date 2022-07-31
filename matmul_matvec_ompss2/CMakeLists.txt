@@ -55,20 +55,23 @@ foreach (NODEID 0;1)
     continue()
   endif()
 
-  SET(TESTLIST matmul matvec) # The order is important
-  foreach (ISMATVEC 0;1)
-    list(GET TESTLIST ${ISMATVEC} TEST)
+  foreach (VERSION ompss2 resize)
 
-    set(BLASLIST noblas blas)
-    foreach(BLAS 0 1)
-      list(GET BLASLIST ${BLAS} BLASSUFIX)
+    SET(TESTLIST matmul matvec) # The order is important
+    foreach (ISMATVEC 0;1)
+      list(GET TESTLIST ${ISMATVEC} TEST)
 
-      # Strong
-      SET(TASKTYPELIST strong_flat_task strong_nested_task weak_taskfor)
-      foreach (TASKTYPEID 0;1;2)
-	list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPESUFIX)
 
-	foreach (VERSION ompss2 resize)
+      set(BLASLIST noblas blas)
+      foreach(BLAS 0 1)
+	list(GET BLASLIST ${BLAS} BLASSUFIX)
+
+
+	# Strong
+	SET(TASKTYPELIST strong_flat_task strong_nested_task weak_taskfor)
+	foreach (TASKTYPEID 0;1;2)
+	  list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPESUFIX)
+
 	  # Executable
 	  set(executable "${TEST}_${TASKTYPESUFIX}_${NODESUFIX}_${BLASSUFIX}_${VERSION}")
 	  message("- Add benchmark: ${executable}")
@@ -83,14 +86,12 @@ foreach (NODEID 0;1)
 	    create_test_pair(${executable})
 	  endif ()
 	endforeach ()
-      endforeach ()
 
-      # weak tests.
-      SET(FETCHLIST weak_nofetch_task weak_fetchall_task) # fetch
-      foreach (FETCHID 0;1)
-	list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
+	# weak tests.
+	SET(FETCHLIST weak_nofetch_task weak_fetchall_task) # fetch
+	foreach (FETCHID 0;1)
+	  list(GET FETCHLIST ${FETCHID} FETCHSUFIX)
 
-	foreach (VERSION ompss2 resize)
 	  set(executable "${TEST}_${FETCHSUFIX}_${NODESUFIX}_${BLASSUFIX}_${VERSION}")
 	  message("- Add benchmark: ${executable}")
 	  add_executable(${executable} main_${VERSION}.c)
@@ -113,6 +114,9 @@ endforeach ()
 # Submit
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_dim.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submitter_dim.sh" submitter_dim.sh @ONLY)
+
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_resize.sh" submit_resize.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submitter_resize.sh" submitter_resize.sh @ONLY)
 
 # Interactive
 configure_file("${PROJECT_SOURCE_DIR}/utils/interactive_dim.sh" interactive_dim.sh @ONLY)
