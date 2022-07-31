@@ -85,13 +85,13 @@ for EXE in ${EXES}; do
 	if [[ ${EXE} =~ "_ompss2" ]]; then
 		for IT in $(seq ${REPEATS}); do
 			for NTASKS in ${ARGS[N]}; do
-				echo "# Starting it: ${it} $(date)"
+				echo "# Starting it: ${IT} $(date)"
 				start=${SECONDS}
 
-				srun --cpu-bind=cores --ntasks=${NTASKS} --cpus-per-task=${CORES} \
-					 ./${EXE} $DIM $BS $ITS 0 $((IT + 1)) ${IT} $(date "+%s %N")
+				COMMAND="srun --cpu-bind=cores --ntasks=${NTASKS} --cpus-per-task=${CORES} ./${EXE} $DIM $BS $ITS 0 $IT $((IT - 1))"
+				echo "# Command: ${COMMAND}"
 
-				[[ ${IT} == 0 ]] || rm -r ${IT}
+				${COMMAND} $(date "+%s %N")
 
 				end=${SECONDS}
 				echo "# Ending: $(date)"
@@ -99,17 +99,23 @@ for EXE in ${EXES}; do
 				echo "# --------------------------------------"
 			done
 		done
+
+		(( IT > 1 )) || rm -r $((IT - 1))
+
 	elif [[ ${EXE} =~ "_resize" ]]; then
-		echo "# Starting it: $(date)"
-		start=${SECONDS}
+		for IT in $(seq ${REPEATS}); do
+			echo "# Starting: $(date)"
+			start=${SECONDS}
 
-		srun --cpu-bind=cores --ntasks=${MINNTASK} --cpus-per-task=${CORES} \
-			 ./${EXE} ${DIM} ${BS} ${GROW} ${FALL}
+			COMMAND="srun --cpu-bind=cores --ntasks=${MINNTASK} --cpus-per-task=${CORES} ./${EXE} ${DIM} ${BS} ${GROW} ${FALL}"
+			echo "# Command: ${COMMAND}"
+			${COMMAND}
 
-		end=${SECONDS}
-		echo "# Ending: $(date)"
-		echo "# Elapsed: $((end-start)) accumulated $((end-init))"
-		echo "# --------------------------------------"
+			end=${SECONDS}
+			echo "# Ending: $(date)"
+			echo "# Elapsed: $((end-start)) accumulated $((end-init))"
+			echo "# --------------------------------------"
+		done
 	fi
 
 done

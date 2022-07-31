@@ -88,7 +88,7 @@ for CORES in ${ARGS[C]}; do
                             --job-name="${JOBPREFIX}/${NTASKS}" \
                             --output="${ARGS[o]}/%x_%j.out" \
                             --error="${ARGS[o]}/%x_%j.err" \
-                            --workdir=. \
+                            --chdir=${PWD} \
                             ./submit_dim.sh \
                             -R ${ARGS[R]} \
                             -D ${ARGS[D]} \

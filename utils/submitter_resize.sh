@@ -74,7 +74,7 @@ for CORES in ${ARGS[C]}; do
         mkdir -p ${OUTDIR}
         echo "# Output directory: ${OUTDIR}"
 
-		MAXNTASK=${echo -e ${ARGS[N]// /\\n} | sort -n | tail -n1}
+        MAXNTASK=$(echo -e ${ARGS[N]// /\\n} | sort -n | tail -n1)
 
         nodes=$(( (MAXNTASK * CORES + 48 - 1) / 48 ))
 
@@ -85,20 +85,19 @@ for CORES in ${ARGS[C]}; do
                         --job-name="${JOBPREFIX}/${NTASKS}" \
                         --output="${ARGS[o]}/%x_%j.out" \
                         --error="${ARGS[o]}/%x_%j.err" \
-                        --workdir=. \
+                        --chdir=${PWD} \
                         ./submit_resize.sh \
                         -R ${ARGS[R]} \
                         -D ${ARGS[D]} \
                         -B ${BS} \
                         -I ${ARGS[I]} \
-                        -N ${ARGS[N]// /,} \ 
+                        -N ${ARGS[N]// /,} \
                         -C ${CORES} \
                         ${ARGS[REST]} "
 
             # Print and execute command
             echo ${command// +/ }
             ${command}
-        done # NTASKS
-    done # BS
+	done # BS
 done # CORES
 echo ""
