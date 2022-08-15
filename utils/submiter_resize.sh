@@ -29,7 +29,6 @@ add_argument -a C -l cores -h "Number of cores per node" -t int -d 24
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t list
-add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
 
 parse_args "$@"
 
@@ -76,7 +75,7 @@ for CORES in ${ARGS[C]}; do
 
         MAXNTASK=$(echo -e ${ARGS[N]// /\\n} | sort -n | tail -n1)
 
-        nodes=$(( (MAXNTASK * CORES + 48) / 48 ))
+        nodes=$(( (MAXNTASK * CORES + 48 - 1) / 48 ))
 
         command="sbatch --nodes=${nodes} \
                         --exclusive \
@@ -85,19 +84,20 @@ for CORES in ${ARGS[C]}; do
                         --job-name="${JOBPREFIX}/${NTASKS}" \
                         --output="${ARGS[o]}/%x_%j.out" \
                         --error="${ARGS[o]}/%x_%j.err" \
-                        --chdir=${PWD} \
+                        --workdir=. \
                         ./submit_resize.sh \
                         -R ${ARGS[R]} \
                         -D ${ARGS[D]} \
                         -B ${BS} \
                         -I ${ARGS[I]} \
-                        -N ${ARGS[N]// /,} \
+                        -N ${ARGS[N]// /,} \ 
                         -C ${CORES} \
                         ${ARGS[REST]} "
 
             # Print and execute command
             echo ${command// +/ }
             ${command}
-	done # BS
+        done # NTASKS
+    done # BS
 done # CORES
 echo ""

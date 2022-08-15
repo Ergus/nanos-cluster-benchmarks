@@ -50,9 +50,6 @@ int main(int argc, char* argv[])
 	#pragma oss taskwait
 
 	printf("# Starting algorithm\n");
-	timer atimer = create_timer("Algorithm_time");
-	stop_timer(&atimer);
-	reset_timer(&atimer);
 
 	// This is from the ArgParser API to access the remaining extra arguments
 	// The pointer is to the original argv array, so don't change it.
@@ -62,25 +59,39 @@ int main(int argc, char* argv[])
 	assert(rest != NULL || nrest == 0);
 
 	for (int n = 0;  n < nrest; ++n) {
-		int newsize = strtol(rest[n], NULL, 0);
-		assert(newsize >= initialSize);
 		const int oldsize = nanos6_get_num_cluster_nodes();
-		if (newsize != oldsize) {
-			int delta = newsize - oldsize;
-			struct timespec startRes, endRes;
-			getTime(&startRes);
-			nanos6_cluster_resize(delta);
-			getTime(&endRes);
-			struct timespec deltaRes = diffTime(&startRes, &endRes);
-			printf("# Resize:%d->%d: %lf\n",
-			       oldsize, newsize, getNS(&deltaRes));
+		const int newsize = strtol(rest[n], NULL, 0);
+		assert(newsize >= initialSize);
+
+		const int delta = newsize - oldsize;
+
+		if (delta == 0) {
+			continue;
 		}
 
-		start_timer(&atimer);
-		matvec_tasks_ompss2(A, B, C, TS, ROWS, colsBC, 0);
+		printf("# Resize start: %d %d %d\n", oldsize, newsize, delta);
 
-		#pragma oss taskwait
-		stop_timer(&atimer);
+		struct timespec startRes, endRes, end1, end2;
+
+		getTime(&startRes);
+		nanos6_cluster_resize(delta);
+		getTime(&endRes);
+
+		matvec_tasks_ompss2(A, B, C, TS, ROWS, colsBC, 0);
+		#pragma oss taskwait noflush
+		getTime(&end1);
+
+		matvec_tasks_ompss2(A, B, C, TS, ROWS, colsBC, 0);
+		#pragma oss taskwait noflush
+		getTime(&end2);
+
+		const struct timespec deltaRes = diffTime(&startRes, &endRes);
+		const struct timespec delta1 = diffTime(&endRes, &end1);
+		const struct timespec delta2 = diffTime(&end1, &end2);
+
+		printf("## Resize:%d->%d:%d %lg %lg %lg\n",
+		       oldsize, newsize, delta,
+		       getNS(&deltaRes), getNS(&delta1), getNS(&delta2));
 	}
 
 	printf("# Finished algorithm and resizes...\n");

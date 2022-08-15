@@ -98,9 +98,8 @@ for EXE in ${EXES}; do
 				echo "# Elapsed: $((end-start)) accumulated $((end-init))"
 				echo "# --------------------------------------"
 			done
+			(( IT > 1 )) && rm -r $((IT - 1))
 		done
-
-		(( IT > 1 )) || rm -r $((IT - 1))
 
 	elif [[ ${EXE} =~ "_resize" ]]; then
 		for IT in $(seq ${REPEATS}); do
