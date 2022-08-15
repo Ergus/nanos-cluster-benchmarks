@@ -16,7 +16,7 @@
  */
 
 #include <unistd.h>
-#include "cholesky_fare_ompss2.h"
+#include "cholesky_fare.h"
 
 struct matrix_info {
 	size_t nt;                     // number of blocks
@@ -58,37 +58,6 @@ int round_up(int x, int y, int mod)
 	return delta ? x + (mod-delta) : x;
 }
 
-/* void print_matrix_task( */
-/* 	size_t nt, size_t ts, */
-/* 	double A[nt * nt][ts][ts], */
-/* 	int nodeid */
-/* 	const struct matrix_info info, */
-/* ) { */
-/* 	size_t nt = info.nt; */
-/* 	size_t ts = info.ts; */
-
-/* 	#pragma oss task in(A[0:nt][0:nt][0;ts][0;ts]) in(info[0]) \ */
-/* 		node(nodeid) label("print_matrix") */
-/* 	{ */
-/* 		for (size_t i = 0; i < nt; i++) { */
-/* 			for (size_t k = 0; k < ts; ++k) { */
-/* 				for (size_t j = 0; j < nt; ++j) { */
-/* 					const size_t idx = get_block_global_index(info, i, j); */
-/* 					double lA[ts][ts] = A[idx]; */
-
-/* 					for (size_t l = 0; l < ts; ++l) { */
-/* 						printf("%5.2f ", (float)lA[k][l]); */
-/* 					} */
-/* 					printf(" "); */
-/* 				} */
-/* 				printf("\n"); */
-/* 			} */
-/* 			printf(" \n"); */
-/* 		} */
-/* 		printf("--------\n"); */
-/* 		fflush(stdout); */
-/* 	} */
-/* } */
 
 void get_block_info(int ROWS, int TS, struct matrix_info *info)
 {
@@ -123,9 +92,9 @@ void get_block_info(int ROWS, int TS, struct matrix_info *info)
 }
 
 
-void cholesky_init_task(const struct matrix_info *pinfo,
-                        double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts],
-                        double Ans[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
+void cholesky_init_taskfor(const struct matrix_info *pinfo,
+                           double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts],
+                           double Ans[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
 ) {
 	struct matrix_info info = *pinfo;
 	const size_t dim = pinfo->nt * pinfo->ts;
@@ -164,7 +133,7 @@ void cholesky_init_task(const struct matrix_info *pinfo,
 	} // for i
 }
 
-void cholesky_single(
+void cholesky_single_taskfor(
 	const struct matrix_info *pinfo,
 	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
 ) {
@@ -463,7 +432,7 @@ int main(int argc, char *argv[])
 	// threads are needed for the weak tasks, which stay alive for
 	// autowait. Note: we want them to stay alive also so that there
 	// is more opportunity to connect later tasks in the namespace.
-	cholesky_init_task(&info, A, Ans);
+	cholesky_init_taskfor(&info, A, Ans);
 	#pragma oss taskwait
 
 	// ===========================================
@@ -495,7 +464,7 @@ int main(int argc, char *argv[])
 
 	// ===========================================
 	// ACTUAL CALCULATION
-	cholesky_init_task(&info, A, Ans);
+	cholesky_init_taskfor(&info, A, Ans);
 
 
 #if 0 // not needed as taskwaits unfragment even if different writeid
@@ -525,7 +494,7 @@ int main(int argc, char *argv[])
 
 	if (CHECK == 1) {
 		timer stimer = create_timer("Single_time");
-		cholesky_single(&info, Ans);
+		cholesky_single_taskfor(&info, Ans);
 		#pragma oss taskwait
 		stop_timer(&stimer);
 	}

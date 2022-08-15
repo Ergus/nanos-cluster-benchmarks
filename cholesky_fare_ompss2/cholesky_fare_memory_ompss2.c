@@ -15,7 +15,7 @@
  * along with this program.	 If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cholesky_fare_ompss2.h"
+#include "cholesky_fare.h"
 
 struct matrix_info {
 	size_t nt;                     // number of blocks
@@ -81,9 +81,9 @@ void get_block_info(int ROWS, int TS, struct matrix_info *info)
 }
 
 
-void cholesky_init_task(const struct matrix_info *pinfo,
-                        double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts],
-                        double Ans[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
+void cholesky_memory_init_task(const struct matrix_info *pinfo,
+                               double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts],
+                               double Ans[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
 ) {
 	struct matrix_info info = *pinfo;
 	const size_t dim = pinfo->nt * pinfo->ts;
@@ -122,7 +122,7 @@ void cholesky_init_task(const struct matrix_info *pinfo,
 	} // for i
 }
 
-void cholesky_single(
+void cholesky_memory_single(
 	const struct matrix_info *pinfo,
 	double A[pinfo->nt * pinfo->nt][pinfo->ts][pinfo->ts]
 ) {
@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
 	// threads are needed for the weak tasks, which stay alive for
 	// autowait. Note: we want them to stay alive also so that there
 	// is more opportunity to connect later tasks in the namespace.
-	cholesky_init_task(&info, A, Ans);
+	cholesky_memory_init_task(&info, A, Ans);
 	#pragma oss taskwait
 
 	// ===========================================
@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
 
 	// ===========================================
 	// ACTUAL CALCULATION
-	cholesky_init_task(&info, A, Ans);
+	cholesky_memory_init_task(&info, A, Ans);
 	#pragma oss taskwait
 
 	// ===========================================
@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
 
 	if (CHECK) {
 		timer stimer = create_timer("Single_time");
-		cholesky_single(&info, Ans);
+		cholesky_memory_single(&info, Ans);
 		#pragma oss taskwait
 		stop_timer(&stimer);
 	}

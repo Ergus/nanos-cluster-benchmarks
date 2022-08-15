@@ -18,23 +18,25 @@
 
 set(TEST "cholesky")
 
-SET(TESTTYPE weak strong)
-foreach (TYPEID 0;1)
-  list(GET TESTTYPE ${TYPEID} TYPE)
-  set(executable "cholesky_fare_${TYPE}_ompss2")
+foreach (VERSION ompss2 resize)
+  SET(TESTTYPE weak strong)
+  foreach (TYPEID 0;1)
+    list(GET TESTTYPE ${TYPEID} TYPE)
+    set(executable "cholesky_fare_${TYPE}_${VERSION}")
 
-  message("- Add benchmark: ${executable}")
+    message("- Add benchmark: ${executable}")
 
-  add_executable(${executable} cholesky_fare_ompss2.c)
-  target_compile_definitions(${executable} PUBLIC -DTYPEID=${TYPEID})
+    add_executable(${executable} cholesky_fare_${VERSION}.c)
+    target_compile_definitions(${executable} PUBLIC -DTYPEID=${TYPEID})
 
-  add_test(NAME Test_${executable}
-    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16)
-  # Create FIXTURES_SETUP for Test_${executable}
-  set_tests_properties(Test_${executable} PROPERTIES
-    ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
+    add_test(NAME Test_${executable}
+      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16)
+    # Create FIXTURES_SETUP for Test_${executable}
+    set_tests_properties(Test_${executable} PROPERTIES
+      ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml")
 
-endforeach ()
+  endforeach ()
+endforeach()
 
 #======= cholesky_fare optimized versions ==========
 SET(TESTTYPE memory taskfor)
