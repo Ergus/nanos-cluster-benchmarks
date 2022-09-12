@@ -26,6 +26,7 @@ add_argument -a o -l output -h "Output directory" -t string -d "results"
 add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
 add_argument -a N -l ntasks -h "Number of tasks" -t list -d 1,2,4,8,16,32,64
 add_argument -a C -l cores -h "Number of cores per node" -t int -d 24
+add_argument -a I -l iterations -h "Number of internal operations" -t int -d 4
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t list

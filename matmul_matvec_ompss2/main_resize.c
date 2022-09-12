@@ -34,10 +34,12 @@ int main(int argc, char* argv[])
 	const char *PREFIX = basename(argv[0]);
 	const size_t ROWS = create_cl_size_t ("Rows");
 	const size_t TS = create_cl_size_t ("Tasksize");
+	const size_t ITS = create_cl_size_t ("Iterations");
 
 	const size_t initialSize = nanos6_get_num_cluster_nodes();
 
 	inst_register_events();  // Register the events in the instrumentation
+	struct timespec epoch;
 
 	timer ttimer = create_timer("Total_time");
 
@@ -46,6 +48,9 @@ int main(int argc, char* argv[])
 	printf("# Initializing data\n");
 	double *A = alloc_init(ROWS, ROWS, TS, true);    // this initialized by blocks ts x rows
 	double *B = alloc_init(ROWS, colsBC, TS, true);  // this splits the array in ts
+
+	double *tmp = alloc_init(2, 1, 1, false);  // this splits the array in ts
+
 	double *C = alloc_init(ROWS, colsBC, TS, false);
 	#pragma oss taskwait
 
@@ -69,29 +74,22 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
-		printf("# Resize start: %d %d %d\n", oldsize, newsize, delta);
+		clock_gettime(CLOCK_REALTIME, &epoch);
+		printf("### wsize0:%d %jd %09ld\n", oldsize, (intmax_t)epoch.tv_sec, epoch.tv_nsec);
 
-		struct timespec startRes, endRes, end1, end2;
-
-		getTime(&startRes);
 		nanos6_cluster_resize(delta);
-		getTime(&endRes);
 
-		matvec_tasks_ompss2(A, B, C, TS, ROWS, colsBC, 0);
-		#pragma oss taskwait noflush
-		getTime(&end1);
+		clock_gettime(CLOCK_REALTIME, &epoch);
+		printf("### wsize1:%d %jd %09ld\n", newsize, (intmax_t)epoch.tv_sec, epoch.tv_nsec);
 
-		matvec_tasks_ompss2(A, B, C, TS, ROWS, colsBC, 0);
-		#pragma oss taskwait noflush
-		getTime(&end2);
+		for (int i = 0; i < ITS; ++i) {
+			matvec_tasks_ompss2(A, B, C, TS, ROWS, colsBC, 0);
 
-		const struct timespec deltaRes = diffTime(&startRes, &endRes);
-		const struct timespec delta1 = diffTime(&endRes, &end1);
-		const struct timespec delta2 = diffTime(&end1, &end2);
+			#pragma oss taskwait noflush
 
-		printf("## Resize:%d->%d:%d %lg %lg %lg\n",
-		       oldsize, newsize, delta,
-		       getNS(&deltaRes), getNS(&delta1), getNS(&delta2));
+			clock_gettime(CLOCK_REALTIME, &epoch);
+			printf("### wsize2:%d %jd %09ld\n", newsize, (intmax_t)epoch.tv_sec, epoch.tv_nsec);
+		}
 	}
 
 	printf("# Finished algorithm and resizes...\n");
@@ -103,9 +101,14 @@ int main(int argc, char* argv[])
 	free_matrix(C, ROWS * colsBC);
 	stop_timer(&ftimer);
 
+	nanos6_cluster_info_t info;
+	nanos6_get_cluster_info(&info);
+
 	create_reportable_int("cpu_count", nanos6_get_num_cpus());
-	create_reportable_int("namespace_enabled", nanos6_get_namespace_is_enabled());
+	create_reportable_int("namespace_enabled", info.namespace_enabled);
 	create_reportable_string("nanos6_version", nanos6_get_runtime_version());
+	create_reportable_int("spawn_policy", info.spawn_policy);
+	create_reportable_int("transfer_policy", info.transfer_policy);
 
 	report_args();
 	free_args();

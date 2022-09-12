@@ -82,21 +82,20 @@ int main(int argc, char *argv[])
 		getTime(&endInit);
 
 		// ===========================================
-		printf("# Starting algorithm\n");
+		// printf("# Starting algorithm\n");
 
-		cholesky_ompss2(nt, TS, A, block_rank, /* prvanim */ true);
-		#pragma oss taskwait
-		getTime(&endCho);
+		// cholesky_ompss2(nt, TS, A, block_rank, /* prvanim */ true);
+		// #pragma oss taskwait
+		// getTime(&endCho);
 
 		// ===========================================
 
 		const struct timespec deltaRes = diffTime(&startRes, &endRes);
 		const struct timespec deltaInit = diffTime(&endRes, &endInit);
-		const struct timespec deltaCho = diffTime(&endInit, &endCho);
+		// const struct timespec deltaCho = diffTime(&endInit, &endCho);
 
-		printf("## Resize:%d->%d:%d %lg %lg %lg\n",
-		       oldsize, newsize, delta,
-		       getNS(&deltaRes), getNS(&deltaInit), getNS(&deltaCho));
+		printf("## Resize:%d->%d:%d %lg %lg\n",
+		       oldsize, newsize, delta, getNS(&deltaRes), getNS(&deltaInit));
 
 	}
 	printf("# Finished algorithm\n");

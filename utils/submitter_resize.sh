@@ -26,6 +26,7 @@ add_argument -a o -l output -h "Output directory" -t string -d "results"
 add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
 add_argument -a N -l ntasks -h "Number of tasks" -t list -d 1,2,4,8,16,32,64
 add_argument -a C -l cores -h "Number of cores per node" -t int -d 24
+add_argument -a T -l transfer -h "Transfer policy on shrink" -t enum -e lazy,eager -d lazy
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t list
@@ -68,7 +69,7 @@ done
 for CORES in ${ARGS[C]}; do
     for BS in ${ARGS[B]}; do
 
-        JOBPREFIX="${TEST}_${ARGS[D]}_${BS}_${ARGS[I]}_${CORES}"
+        JOBPREFIX="${TEST}_${ARGS[D]}_${BS}_${ARGS[I]}_${CORES}_${ARGS[T]}"
 
         OUTDIR="${ARGS[o]}/${JOBPREFIX}"
         mkdir -p ${OUTDIR}
@@ -82,9 +83,9 @@ for CORES in ${ARGS[C]}; do
                         --exclusive \
                         --time=${ARGS[w]} \
                         --qos=${ARGS[q]} \
-                        --job-name="${JOBPREFIX}/${NTASKS}" \
-                        --output="${ARGS[o]}/%x_%j.out" \
-                        --error="${ARGS[o]}/%x_%j.err" \
+                        --job-name="${JOBPREFIX}" \
+                        --output="${ARGS[o]}/%x/%j.out" \
+                        --error="${ARGS[o]}/%x/%j.err" \
                         --chdir=${PWD} \
                         ./submit_resize.sh \
                         -R ${ARGS[R]} \
@@ -93,6 +94,7 @@ for CORES in ${ARGS[C]}; do
                         -I ${ARGS[I]} \
                         -N ${ARGS[N]// /,} \
                         -C ${CORES} \
+						-T ${ARGS[T]} \
                         ${ARGS[REST]} "
 
             # Print and execute command

@@ -22,6 +22,8 @@ add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t int
 add_argument -a I -l iterations -h "Program iterations" -t int
 
+add_argument -a T -l transfer -h "Transfer policy on shrink" -t enum -e lazy,eager
+
 # Parse input command line arguments
 parse_args "$@"
 
@@ -35,26 +37,12 @@ ITS=${ARGS[I]}
 NTASKS=${ARGS[N]}
 CORES=${ARGS[C]}
 
+TRANSFER=${ARGS[T]}
+
 # The REST argument contains the list of executables...
 
 # special nanos variables needed to set.
 export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
-
-# Start run here printing run info header
-echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
-echo "# Nodes: ${SLURM_JOB_NUM_NODES} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
-echo "# Ntasks: ${NTASKS} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE}"
-echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
-echo "# QOS: ${SLURM_JOB_QOS}"
-echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
-echo "# Walltime: $(squeue -h -j $SLURM_JOBID -o "%l")"
-
-# Print command line arguments
-printargs "# "
-
-# Print nanos6 environment variables
-env | grep NANOS6 | sed -e 's/^#*/# /'
-echo ""
 
 if [ $((SLURM_JOB_NUM_NODES*BS<=DIM)) != 1 ]; then
 	echo "# Jump combination nodes: $node, dim: $rows, bs: $BS"
@@ -71,7 +59,23 @@ FALL=$(echo -e ${ARGS[N]// /\\n} | sort -n -r | tr '\n' ' ')
 MINNTASK=$(echo -e ${GROW// /\\n} | head -n1)
 MAXNTASK=$(echo -e ${FALL// /\\n} | head -n1)
 
-export NANOS6_CONFIG_OVERRIDE="cluster.num_max_nodes=${MAXNTASK}"
+export NANOS6_CONFIG_OVERRIDE="cluster.num_max_nodes=${MAXNTASK},cluster.default_shrink_transfer_policy=${TRANSFER}"
+
+# Start run here printing run info header
+echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
+echo "# Nodes: ${SLURM_JOB_NUM_NODES} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
+echo "# Ntasks: ${NTASKS} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE}"
+echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
+echo "# QOS: ${SLURM_JOB_QOS}"
+echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
+echo "# Walltime: $(squeue -h -j $SLURM_JOBID -o "%l")"
+
+# Print command line arguments
+printargs "# "
+
+# Print nanos6 environment variables
+env | grep NANOS6 | sed -e 's/^#*/# /'
+echo ""
 
 for EXE in ${EXES}; do
 	# Check that EXE exists and is an executable
@@ -106,7 +110,7 @@ for EXE in ${EXES}; do
 			echo "# Starting: $(date)"
 			start=${SECONDS}
 
-			COMMAND="srun --cpu-bind=cores --ntasks=${MINNTASK} --cpus-per-task=${CORES} ./${EXE} ${DIM} ${BS} ${GROW} ${FALL}"
+			COMMAND="srun --cpu-bind=cores --ntasks=${MINNTASK} --cpus-per-task=${CORES} ./${EXE} ${DIM} ${BS} ${ITS} ${GROW} ${FALL}"
 			echo "# Command: ${COMMAND}"
 			${COMMAND}
 
