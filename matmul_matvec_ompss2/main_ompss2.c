@@ -37,15 +37,19 @@ int main(int argc, char* argv[])
 	const size_t TIME_S = create_optional_cl_size_t("Epoch_secs", 0);
 	const size_t TIME_NS = create_optional_cl_size_t("Epoch_nsecs", 0);
 
+	const int wsize = nanos6_get_num_cluster_nodes();
+
+	struct timespec epoch;
+
 	// Measure the time to start the process and initialize the runtime
 	// This requires to pass $(date "+%s %N") for the last two arguments.
 	if (TIME_S != 0 && TIME_NS != 0) {
 		struct timespec t1 = {.tv_sec = TIME_S, .tv_nsec = TIME_NS};
 
-		struct timespec t2;
-		clock_gettime(CLOCK_REALTIME, &t2);
+		clock_gettime(CLOCK_REALTIME, &epoch);
+		printf("### wsize0:%d %jd %09ld\n", wsize, (intmax_t)epoch.tv_sec, epoch.tv_nsec);
 
-		struct timespec delta = diffTime(&t1, &t2);
+		struct timespec delta = diffTime(&t1, &epoch);
 		create_reportable_double("srun_time", getNS(&delta));
 	}
 
@@ -64,6 +68,8 @@ int main(int argc, char* argv[])
 		B = alloc_restart(ROWS, colsBC, RESTART, 2);  // this splits the array in ts
 		C = alloc_restart(ROWS, colsBC, RESTART, 3);
 		#pragma oss taskwait
+		clock_gettime(CLOCK_REALTIME, &epoch);
+		printf("### wsize1:%d %jd %09ld\n", wsize, (intmax_t)epoch.tv_sec, epoch.tv_nsec);
 		stop_timer(&rtimer);
 	} else {
 		printf("# Initializing data\n");
@@ -78,8 +84,12 @@ int main(int argc, char* argv[])
 
 	for (int i = 0; i < ITS; ++i) {
 		matvec_tasks_ompss2(A, B, C, TS, ROWS, colsBC, i);
+
+		#pragma oss taskwait noflush
+		clock_gettime(CLOCK_REALTIME, &epoch);
+		printf("### wsize2:%d %jd %09ld\n", wsize, (intmax_t)epoch.tv_sec, epoch.tv_nsec);
 	}
-	#pragma oss taskwait
+
 
 	stop_timer(&atimer);
 
@@ -95,17 +105,22 @@ int main(int argc, char* argv[])
 			const bool valid = validate(A, B, C, ROWS, colsBC);
 			printf("# Verification: %s\n", (valid ? "Success" : "Failed"));
 		}
-
 		#pragma oss taskwait
 	}
 
 	if (CHECKPOINT != 0) {
+		printf("# Checkpointing... start\n");
 		timer ctimer = create_timer("Checkpoint_time");
 		checkpoint_matrix(A, ROWS, ROWS, CHECKPOINT, 1);
 		checkpoint_matrix(B, ROWS, colsBC, CHECKPOINT, 2);
 		checkpoint_matrix(C, ROWS, colsBC, CHECKPOINT, 3);
 		#pragma oss taskwait
 		stop_timer(&ctimer);
+		printf("# Checkpointing... done\n");
+
+		// print endtime start
+		clock_gettime(CLOCK_REALTIME, &epoch);
+		printf("### wsize3:%d %jd %09ld\n", wsize, (intmax_t)epoch.tv_sec, epoch.tv_nsec);
 	}
 
 	timer ftimer = create_timer("Free_time");
