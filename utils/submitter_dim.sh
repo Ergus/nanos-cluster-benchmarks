@@ -26,11 +26,17 @@ add_argument -a o -l output -h "Output directory" -t string -d "results"
 add_argument -a R -l repeats -h "Program repetitions default[3]" -t int -d 3
 add_argument -a N -l ntasks -h "Number of tasks" -t list -d 1,2,4,8,16,32
 add_argument -a C -l cores -h "Number of cores per node" -t list -d 12,24,48
-add_argument -a F -l fitnodes -h "Fit processes in nodes" -t bool
 
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t list
 add_argument -a I -l iterations -h "Program interations default[5]" -t int -d 5
+
+add_argument -a M -l disable_remote -h "Disable namespace" -t bool
+add_argument -a L -l leader -h "Leader thread" -t bool -d true
+add_argument -a G -l group -h "Group Messages" -t bool -d true
+add_argument -a W -l writeid -h "Use writeID" -t bool -d true
+add_argument -a H -l helpers -h "Number of handler workers" -t int -d 2
+
 
 parse_args "$@"
 
@@ -70,38 +76,36 @@ for CORES in ${ARGS[C]}; do
     for BS in ${ARGS[B]}; do
 
         JOBPREFIX="${TEST}_${ARGS[D]}_${BS}_${ARGS[I]}_${CORES}"
+        JOBPREFIX+="_M_${ARGS[M]}_L_${ARGS[L]}_G_${ARGS[G]}_W_${ARGS[W]}_H_${ARGS[H]}"
 
-        OUTDIR="${ARGS[o]}/${JOBPREFIX}"
-        mkdir -p ${OUTDIR}
-        echo "# Output directory: ${OUTDIR}"
+        MAXNTASK=$(echo -e ${ARGS[N]// /\\n} | sort -n | tail -n1)
+        nodes=$(( (MAXNTASK * CORES + 47) / 48 ))
 
-        for NTASKS in ${ARGS[N]}; do
-            if [ ${ARGS[F]} == true ]; then # One process per node
-                nodes=$(( (NTASKS * CORES + 48 - 1) / 48 ))
-            else
-                nodes=${NTASKS}
-            fi
-            command="sbatch --nodes=${nodes} \
-                            --exclusive \
-                            --time=${ARGS[w]} \
-                            --qos=${ARGS[q]} \
-                            --job-name="${JOBPREFIX}/${NTASKS}" \
-                            --output="${ARGS[o]}/%x_%j.out" \
-                            --error="${ARGS[o]}/%x_%j.err" \
-                            --chdir=${PWD} \
-                            ./submit_dim.sh \
-                            -R ${ARGS[R]} \
-                            -D ${ARGS[D]} \
-                            -B ${BS} \
-                            -I ${ARGS[I]} \
-                            -N ${NTASKS}   \
-                            -C ${CORES} \
-                            ${ARGS[REST]} "
+        command="sbatch --nodes=${nodes} \
+                        --exclusive \
+                        --time=${ARGS[w]} \
+                        --qos=${ARGS[q]} \
+                        --job-name="${JOBPREFIX}" \
+                        --output="${ARGS[o]}/%x_%j.out" \
+                        --error="${ARGS[o]}/%x_%j.err" \
+                        --chdir=${PWD} \
+                        ./submit_dim.sh \
+                        -R ${ARGS[R]} \
+                        -D ${ARGS[D]} \
+                        -B ${BS} \
+                        -I ${ARGS[I]} \
+                        -N ${ARGS[N]// /,} \
+                        -C ${CORES} \
+                        -M ${ARGS[M]} \
+                        -L ${ARGS[L]} \
+                        -G ${ARGS[G]} \
+                        -W ${ARGS[W]} \
+                        -H ${ARGS[H]} \
+                        ${ARGS[REST]} "
 
-            # Print and execute command
-            echo ${command// +/ }
-            ${command}
-        done # NTASKS
+        # Print and execute command
+        echo ${command// +/ }
+        ${command}
     done # BS
 done # CORES
 echo ""
