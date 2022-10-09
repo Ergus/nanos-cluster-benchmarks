@@ -76,7 +76,6 @@ for CORES in ${ARGS[C]}; do
         echo "# Output directory: ${OUTDIR}"
 
         MAXNTASK=$(echo -e ${ARGS[N]// /\\n} | sort -n | tail -n1)
-
         nodes=$(( (MAXNTASK * CORES + 48) / 48 ))
 
         command="sbatch --nodes=${nodes} \

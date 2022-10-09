@@ -177,7 +177,6 @@ void jacobi_tasks_ompss2(const double *A, const double *B,
 			#pragma oss task in(A[i * dim; rowsPerNode * dim])			\
 				in(xin[0; dim])											\
 				in(B[i; rowsPerNode])									\
-				out(xout[i; rowsPerNode])								\
 				node(nanos6_cluster_no_offload) label("fetchtask")
 			{
 			}
@@ -231,7 +230,7 @@ int main(int argc, char* argv[])
 	init_x_task(x1, ROWS, TS, 0.0);
 	init_x_task(x2, ROWS, TS, 0.0);
 
-	#pragma oss taskwait
+	#pragma oss taskwait noflush
 
 	printf("# Starting algorithm\n");
 	timer atimer = create_timer("Algorithm_time");
@@ -245,7 +244,7 @@ int main(int argc, char* argv[])
 
 		jacobi_tasks_ompss2(A, B, xin, xout, TS, ROWS, i);
 	}
-	#pragma oss taskwait
+	#pragma oss taskwait noflush
 
 	stop_timer(&atimer);
 
@@ -264,10 +263,7 @@ int main(int argc, char* argv[])
 	nanos6_dfree(x1, ROWS * sizeof(double));
 	nanos6_dfree(x2, ROWS * sizeof(double));
 
-	create_reportable_int("worldsize", nanos6_get_num_cluster_nodes());
-	create_reportable_int("cpu_count", nanos6_get_num_cpus());
-	create_reportable_int("namespace_enabled", nanos6_get_namespace_is_enabled());
-	create_reportable_string("nanos6_version", nanos6_get_runtime_version());
+	nanos6_cluster_info_to_report();
 
 	report_args();
 	free_args();

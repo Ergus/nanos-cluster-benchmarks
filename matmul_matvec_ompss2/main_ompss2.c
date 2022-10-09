@@ -84,13 +84,9 @@ int main(int argc, char* argv[])
 
 	for (int i = 0; i < ITS; ++i) {
 		matvec_tasks_ompss2(A, B, C, TS, ROWS, colsBC, i);
-
-		#pragma oss taskwait noflush
-		clock_gettime(CLOCK_REALTIME, &epoch);
-		printf("### wsize2:%d %jd %09ld\n", wsize, (intmax_t)epoch.tv_sec, epoch.tv_nsec);
 	}
 
-
+	#pragma oss taskwait noflush
 	stop_timer(&atimer);
 
 	printf("# Finished algorithm...\n");
@@ -129,10 +125,7 @@ int main(int argc, char* argv[])
 	free_matrix(C, ROWS * colsBC);
 	stop_timer(&ftimer);
 
-	create_reportable_int("worldsize", nanos6_get_num_cluster_nodes());
-	create_reportable_int("cpu_count", nanos6_get_num_cpus());
-	create_reportable_int("namespace_enabled", nanos6_get_namespace_is_enabled());
-	create_reportable_string("nanos6_version", nanos6_get_runtime_version());
+	nanos6_cluster_info_to_report();
 
 	report_args();
 	free_args();

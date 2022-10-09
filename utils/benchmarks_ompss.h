@@ -66,6 +66,23 @@ void dsyrk_(const char *uplo, const char *trans, const int *n, const int *k,
 void dpotrf_(const char *uplo, const int *n, double *a,
              const int *lda, int *info);
 
+void nanos6_cluster_info_to_report()
+{
+	nanos6_cluster_info_t info;
+
+	nanos6_get_cluster_info(&info);
+
+	create_reportable_int("worldsize", info.cluster_num_nodes);
+	create_reportable_int("namespace_enabled", info.namespace_enabled);
+	create_reportable_int("leader_thread_enabled", info.reserved_leader_thread);
+	create_reportable_int("group_messages_enabled", info.group_messages_enabled);
+	create_reportable_int("write_id_enabled", info.write_id_enabled);
+	create_reportable_int("message_handler_workers", info.num_message_handler_workers);
+
+	create_reportable_int("cpu_count", nanos6_get_num_cpus());
+	create_reportable_string("nanos6_version", nanos6_get_runtime_version());
+}
+
 #if __WITH_EXTRAE // #####################
 
 	#include <extrae.h>
