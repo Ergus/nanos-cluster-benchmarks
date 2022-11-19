@@ -81,6 +81,9 @@ void nanos6_cluster_info_to_report()
 
 	create_reportable_int("cpu_count", nanos6_get_num_cpus());
 	create_reportable_string("nanos6_version", nanos6_get_runtime_version());
+
+	create_reportable_int("spawn_policy", info.spawn_policy);
+	create_reportable_int("transfer_policy", info.transfer_policy);
 }
 
 #if __WITH_EXTRAE // #####################

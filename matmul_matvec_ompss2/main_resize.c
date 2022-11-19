@@ -101,14 +101,7 @@ int main(int argc, char* argv[])
 	free_matrix(C, ROWS * colsBC);
 	stop_timer(&ftimer);
 
-	nanos6_cluster_info_t info;
-	nanos6_get_cluster_info(&info);
-
-	create_reportable_int("cpu_count", nanos6_get_num_cpus());
-	create_reportable_int("namespace_enabled", info.namespace_enabled);
-	create_reportable_string("nanos6_version", nanos6_get_runtime_version());
-	create_reportable_int("spawn_policy", info.spawn_policy);
-	create_reportable_int("transfer_policy", info.transfer_policy);
+	nanos6_cluster_info_to_report();
 
 	report_args();
 	free_args();
