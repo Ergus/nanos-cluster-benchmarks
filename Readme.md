@@ -19,7 +19,7 @@
 
 
 This is the basic centralized set of benchmarks for
-[OmpSs-2@Clusters](https://github.com/bsc-pm/nanos6/blob/master/docs/cluster/README-CLUSTER.md).
+[OmpSs-2@Cluster](https://github.com/bsc-pm/nanos6/blob/master/docs/cluster/README-CLUSTER.md).
 
 ## Installation
 
@@ -27,7 +27,7 @@ Right now it requires a set of dependencies and requirements to
 work. We will try to reduce the dependencies as much as possible in
 the future.
 
-1. [OmpSs-2@Clusters
+1. [OmpSs-2@Cluster
 requirements](https://github.com/bsc-pm/nanos6/blob/master/docs/cluster/README-CLUSTER.md#system-requirements).
 
 2. [Mercurium](https://pm.bsc.es/mcxx)
